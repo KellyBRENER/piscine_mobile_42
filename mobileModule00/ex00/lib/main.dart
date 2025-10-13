@@ -2,6 +2,29 @@ import 'package:flutter/material.dart';
 
 void main() {
   runApp(MaterialApp(
+    theme: ThemeData(
+      brightness: Brightness.dark,
+      primaryColor: Colors.teal,
+      colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.teal,
+          brightness: Brightness.dark,
+          secondary: Colors.amber,
+      ),
+      textTheme: const TextTheme(
+        bodyMedium: TextStyle(
+          color: Colors.amber,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.teal,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+        ),
+      ),
+    ),
     home: HomePage(),
   ));
 }
