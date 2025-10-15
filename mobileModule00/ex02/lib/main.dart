@@ -186,7 +186,7 @@ class CalculatorButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed:() {
 			onTapped;
-			print("'$label'");
+			debugPrint("'$label'");
 		},
         style: ElevatedButton.styleFrom(
           shape: const BeveledRectangleBorder(),
