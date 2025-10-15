@@ -7,11 +7,9 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      //widget à la base de l'arbre des widget
       title: 'Calculator',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
@@ -26,14 +24,13 @@ class MyHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Constrain the overall app size, and make the Scaffold body fill the
-    // remaining space below the AppBar by using SafeArea + SizedBox.expand.
-    return Scaffold(
-        appBar: MyAppBar(),
-        // Use a SizedBox.expand so the body takes all available space under
-        // the AppBar and there is no empty gap at the bottom.
-        body: const MyCalculator(),
-		);
+    return SafeArea(
+
+	  child: Scaffold(
+		  appBar: MyAppBar(),
+		  body: const MyCalculator(),
+			),
+	);
 		}
 }
 
@@ -81,7 +78,7 @@ class _MyCalculatorState extends State<MyCalculator> {
             resultText: _result,
           ),
         ),
-        Expanded(flex: 2, child: _ButtonLayout(onTapped: _handleButtonPress)),
+        Expanded(flex: 1, child: _ButtonLayout(onTapped: _handleButtonPress)),
       ],
     );
   }
@@ -142,9 +139,9 @@ class _ButtonLayout extends StatelessWidget {
     return Column(
 		mainAxisSize: MainAxisSize.max,
       children: [
-        Expanded(child: _buildButtonRow(['1', '2', '3', 'C', 'AC'])),
+        Expanded(child: _buildButtonRow(['7', '8', '9', 'C', 'AC'])),
         Expanded(child: _buildButtonRow(['4', '5', '6', '+', '-'])),
-        Expanded(child: _buildButtonRow(['7', '8', '9', '*', '/'])),
+        Expanded(child: _buildButtonRow(['1', '2', '3', '*', '/'])),
         Expanded(child: _buildButtonRow(['0', '.', '00', '=', ''])),
       ],
     );
@@ -153,31 +150,52 @@ class _ButtonLayout extends StatelessWidget {
   Widget _buildButtonRow(List<String> buttonLabels) {
     return Row(
 		crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: buttonLabels.map((label) {
-        return CalculatorButton(label: label, onTapped: () => onTapped(label));
-      }).toList(),
-    );
+		children: buttonLabels.map((label) {
+			Color buttonColor = Colors.blueGrey;
+			if (['+', '-','*','/'].contains(label)) {
+				buttonColor = Colors.teal;
+			} else if (label == '=') {
+				buttonColor = Colors.deepOrange;
+			} else if (['C', 'AC'].contains(label)) {
+				buttonColor = Colors.purple;
+			}
+			return CalculatorButton(
+				label: label,
+				onTapped: () => onTapped(label),
+				color : buttonColor,
+				);
+			}).toList(),
+		);
   }
 }
 
 class CalculatorButton extends StatelessWidget {
   final String label;
   final VoidCallback onTapped;
+  final Color color;
 
   const CalculatorButton({
     required this.label,
-    required this.onTapped, super.key});
+    required this.onTapped,
+	this.color = Colors.blueGrey,
+	super.key});
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: ElevatedButton(
-        onPressed: onTapped,
+        onPressed:() {
+			onTapped;
+			print("'$label'");
+		},
         style: ElevatedButton.styleFrom(
           shape: const BeveledRectangleBorder(),
 		  padding: EdgeInsets.zero,
+		  backgroundColor: color,
+		  shadowColor: Colors.amberAccent,
+		  foregroundColor: Colors.amberAccent,
         ),
-        child: Text(label, style: const TextStyle(fontSize: 24)),
+        child: Text(label, style: const TextStyle(fontSize: 24), selectionColor: Colors.amberAccent),
       ),
     );
   }
