@@ -95,10 +95,7 @@ class _MyCalculatorState extends State<MyCalculator> {
           _calculation = '';
         }
       } else if (textButton == 'C' && textButton.isNotEmpty) {
-        _calculation = _calculation.substring(
-          _calculation.length - 1,
-          _calculation.length,
-        );
+        _calculation = _calculation.substring(0, _calculation.length - 1);
         _result = '0';
       } else if (textButton == "AC" && textButton.isNotEmpty) {
         _calculation = '';

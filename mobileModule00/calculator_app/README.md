@@ -27,6 +27,4 @@ les soustractions / additions / multiplications et divisions
 
 Pour cela je vais :
 - créer un widget qui gère l'affichage du calcul dans calculationText
-- créer un widget qui gère le calcul et l'affichage du résultat dans resultText
-au fur et à mesure que l'on tape le calcul
-- créer un widget qui gère l'affichage du résultat EN GROS quand on tape sur '='
+- créer un widget qui gère le calcul et l'affichage du résultat dans resultText au fur et à mesure que l'on tape le calcul
