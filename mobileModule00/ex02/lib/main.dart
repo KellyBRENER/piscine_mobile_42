@@ -25,13 +25,9 @@ class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-
-	  child: Scaffold(
-		  appBar: MyAppBar(),
-		  body: const MyCalculator(),
-			),
-	);
-		}
+      child: Scaffold(appBar: MyAppBar(), body: const MyCalculator()),
+    );
+  }
 }
 
 class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -89,7 +85,8 @@ class _DisplaySection extends StatelessWidget {
   final String resultText;
   const _DisplaySection({
     required this.calculationText,
-    required this.resultText});
+    required this.resultText,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -137,7 +134,7 @@ class _ButtonLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-		mainAxisSize: MainAxisSize.max,
+      mainAxisSize: MainAxisSize.max,
       children: [
         Expanded(child: _buildButtonRow(['7', '8', '9', 'C', 'AC'])),
         Expanded(child: _buildButtonRow(['4', '5', '6', '+', '-'])),
@@ -149,53 +146,58 @@ class _ButtonLayout extends StatelessWidget {
 
   Widget _buildButtonRow(List<String> buttonLabels) {
     return Row(
-		crossAxisAlignment: CrossAxisAlignment.stretch,
-		children: buttonLabels.map((label) {
-			Color buttonColor = Colors.blueGrey;
-			if (['+', '-','*','/'].contains(label)) {
-				buttonColor = Colors.teal;
-			} else if (label == '=') {
-				buttonColor = Colors.deepOrange;
-			} else if (['C', 'AC'].contains(label)) {
-				buttonColor = Colors.purple;
-			}
-			return CalculatorButton(
-				label: label,
-				onTapped: () => onTapped(label),
-				color : buttonColor,
-				);
-			}).toList(),
-		);
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: buttonLabels.map((label) {
+        Color buttonColor = Colors.blueGrey;
+        if (['+', '-', '*', '/'].contains(label)) {
+          buttonColor = Colors.teal;
+        } else if (label == '=') {
+          buttonColor = Colors.deepOrange;
+        } else if (['C', 'AC'].contains(label)) {
+          buttonColor = Colors.purple;
+        }
+        return CalculatorButton(
+          label: label,
+          onTapped: onTapped,
+          color: buttonColor,
+        );
+      }).toList(),
+    );
   }
 }
 
 class CalculatorButton extends StatelessWidget {
   final String label;
-  final VoidCallback onTapped;
+  final Function(String) onTapped;
   final Color color;
 
   const CalculatorButton({
     required this.label,
     required this.onTapped,
-	this.color = Colors.blueGrey,
-	super.key});
+    this.color = Colors.blueGrey,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: ElevatedButton(
-        onPressed:() {
-			onTapped;
-			debugPrint("button pressed :$label");
-		},
+        onPressed: () {
+          onTapped(label);
+          debugPrint("button pressed :$label");
+        },
         style: ElevatedButton.styleFrom(
           shape: const BeveledRectangleBorder(),
-		  padding: EdgeInsets.zero,
-		  backgroundColor: color,
-		  shadowColor: Colors.amberAccent,
-		  foregroundColor: Colors.amberAccent,
+          padding: EdgeInsets.zero,
+          backgroundColor: color,
+          shadowColor: Colors.amberAccent,
+          foregroundColor: Colors.amberAccent,
         ),
-        child: Text(label, style: const TextStyle(fontSize: 24), selectionColor: Colors.amberAccent),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 24),
+          selectionColor: Colors.amberAccent,
+        ),
       ),
     );
   }

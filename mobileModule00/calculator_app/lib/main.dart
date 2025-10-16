@@ -26,13 +26,9 @@ class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-
-	  child: Scaffold(
-		  appBar: MyAppBar(),
-		  body: const MyCalculator(),
-			),
-	);
-		}
+      child: Scaffold(appBar: MyAppBar(), body: const MyCalculator()),
+    );
+  }
 }
 
 class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -59,27 +55,51 @@ class MyCalculator extends StatefulWidget {
 
 class _MyCalculatorState extends State<MyCalculator> {
   String _result = '0';
-  String _calculation = '0';
+  String _calculation = '';
   void _handleButtonPress(String textButton) {
     setState(() {
-      if (['0', '1','2','3','4','5','6','7','8','9', '-','+','*','/','00','.'].contains(textButton)) {
+      if ([
+        '0',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9',
+        '-',
+        '+',
+        '*',
+        '/',
+        '00',
+        '.',
+      ].contains(textButton)) {
         _calculation += textButton;
       } else if (textButton == '=') {
         try {
           GrammarParser p = GrammarParser();
-          Expression exp = p.parse(textButton);
+          Expression exp = p.parse(_calculation);
+          print(exp);
           Expression simplifiedExp = exp.simplify();
+          print(simplifiedExp);
           ContextModel cm = ContextModel();
           var evaluator = RealEvaluator(cm);
           num evalResult = evaluator.evaluate(simplifiedExp);
+          print(evalResult);
           _result = evalResult.toString();
-          _calculation = simplifiedExp.toString();
+          _calculation = '';
         } catch (e) {
           _result = 'Erreur';
           _calculation = '';
         }
       } else if (textButton == 'C' && textButton.isNotEmpty) {
-        _calculation = _calculation.substring(_calculation.length - 1, _calculation.length);
+        _calculation = _calculation.substring(
+          _calculation.length - 1,
+          _calculation.length,
+        );
+        _result = '0';
       } else if (textButton == "AC" && textButton.isNotEmpty) {
         _calculation = '';
         _result = '0';
@@ -110,7 +130,8 @@ class _DisplaySection extends StatelessWidget {
   final String resultText;
   const _DisplaySection({
     required this.calculationText,
-    required this.resultText});
+    required this.resultText,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -158,7 +179,7 @@ class _ButtonLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-		mainAxisSize: MainAxisSize.max,
+      mainAxisSize: MainAxisSize.max,
       children: [
         Expanded(child: _buildButtonRow(['7', '8', '9', 'C', 'AC'])),
         Expanded(child: _buildButtonRow(['4', '5', '6', '+', '-'])),
@@ -170,23 +191,23 @@ class _ButtonLayout extends StatelessWidget {
 
   Widget _buildButtonRow(List<String> buttonLabels) {
     return Row(
-		crossAxisAlignment: CrossAxisAlignment.stretch,
-		children: buttonLabels.map((label) {
-			Color buttonColor = Colors.blueGrey;
-			if (['+', '-','*','/'].contains(label)) {
-				buttonColor = Colors.teal;
-			} else if (label == '=') {
-				buttonColor = Colors.deepOrange;
-			} else if (['C', 'AC'].contains(label)) {
-				buttonColor = Colors.purple;
-			}
-			return CalculatorButton(
-				label: label,
-				onTapped: onTapped(label),
-				color : buttonColor,
-				);
-			}).toList(),
-		);
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: buttonLabels.map((label) {
+        Color buttonColor = Colors.blueGrey;
+        if (['+', '-', '*', '/'].contains(label)) {
+          buttonColor = Colors.teal;
+        } else if (label == '=') {
+          buttonColor = Colors.deepOrange;
+        } else if (['C', 'AC'].contains(label)) {
+          buttonColor = Colors.purple;
+        }
+        return CalculatorButton(
+          label: label,
+          onTapped: onTapped,
+          color: buttonColor,
+        );
+      }).toList(),
+    );
   }
 }
 
@@ -198,25 +219,30 @@ class CalculatorButton extends StatelessWidget {
   const CalculatorButton({
     required this.label,
     required this.onTapped,
-	this.color = Colors.blueGrey,
-	super.key});
+    this.color = Colors.blueGrey,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: ElevatedButton(
         onPressed: () {
-			onTapped(label);
-			debugPrint("button pressed :$label");
-		},
+          onTapped(label);
+          debugPrint("button pressed :$label");
+        },
         style: ElevatedButton.styleFrom(
           shape: const BeveledRectangleBorder(),
-		  padding: EdgeInsets.zero,
-		  backgroundColor: color,
-		  shadowColor: Colors.amberAccent,
-		  foregroundColor: Colors.amberAccent,
+          padding: EdgeInsets.zero,
+          backgroundColor: color,
+          shadowColor: Colors.amberAccent,
+          foregroundColor: Colors.amberAccent,
         ),
-        child: Text(label, style: const TextStyle(fontSize: 24), selectionColor: Colors.amberAccent),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 24),
+          selectionColor: Colors.amberAccent,
+        ),
       ),
     );
   }
