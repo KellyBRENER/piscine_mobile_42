@@ -77,27 +77,24 @@ class _MyCalculatorState extends State<MyCalculator> {
         '.',
       ].contains(textButton)) {
         _calculation += textButton;
-      } else if (textButton == '=') {
+      } else if (textButton == '=' && _calculation.isNotEmpty) {
         try {
           GrammarParser p = GrammarParser();
           Expression exp = p.parse(_calculation);
-          print(exp);
           Expression simplifiedExp = exp.simplify();
-          print(simplifiedExp);
           ContextModel cm = ContextModel();
           var evaluator = RealEvaluator(cm);
           num evalResult = evaluator.evaluate(simplifiedExp);
-          print(evalResult);
           _result = evalResult.toString();
           _calculation = '';
         } catch (e) {
           _result = 'Erreur';
           _calculation = '';
         }
-      } else if (textButton == 'C' && textButton.isNotEmpty) {
+      } else if (textButton == 'C' && _calculation.isNotEmpty) {
         _calculation = _calculation.substring(0, _calculation.length - 1);
         _result = '0';
-      } else if (textButton == "AC" && textButton.isNotEmpty) {
+      } else if (textButton == "AC") {
         _calculation = '';
         _result = '0';
       }
