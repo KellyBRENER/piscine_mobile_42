@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:math_expressions/math_expressions.dart';
 
 void main() {
   runApp(const MyApp());
@@ -62,28 +61,8 @@ class _MyCalculatorState extends State<MyCalculator> {
   String _calculation = '0';
   void _handleButtonPress(String textButton) {
     setState(() {
-      if (['0', '1','2','3','4','5','6','7','8','9', '-','+','*','/','00','.'].contains(textButton)) {
-        _calculation += textButton;
-      } else if (textButton == '=') {
-        try {
-          GrammarParser p = GrammarParser();
-          Expression exp = p.parse(textButton);
-          Expression simplifiedExp = exp.simplify();
-          ContextModel cm = ContextModel();
-          var evaluator = RealEvaluator(cm);
-          num evalResult = evaluator.evaluate(simplifiedExp);
-          _result = evalResult.toString();
-          _calculation = simplifiedExp.toString();
-        } catch (e) {
-          _result = 'Erreur';
-          _calculation = '';
-        }
-      } else if (textButton == 'C' && textButton.isNotEmpty) {
-        _calculation = _calculation.substring(_calculation.length - 1, _calculation.length);
-      } else if (textButton == "AC" && textButton.isNotEmpty) {
-        _calculation = '';
-        _result = '0';
-      }
+      _result = '0';
+      _calculation = '0';
     });
   }
 
@@ -182,7 +161,7 @@ class _ButtonLayout extends StatelessWidget {
 			}
 			return CalculatorButton(
 				label: label,
-				onTapped: onTapped(label),
+				onTapped: () => onTapped(label),
 				color : buttonColor,
 				);
 			}).toList(),
@@ -192,7 +171,7 @@ class _ButtonLayout extends StatelessWidget {
 
 class CalculatorButton extends StatelessWidget {
   final String label;
-  final Function(String) onTapped;
+  final VoidCallback onTapped;
   final Color color;
 
   const CalculatorButton({
@@ -205,8 +184,8 @@ class CalculatorButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: ElevatedButton(
-        onPressed: () {
-			onTapped(label);
+        onPressed:() {
+			onTapped;
 			debugPrint("button pressed :$label");
 		},
         style: ElevatedButton.styleFrom(
