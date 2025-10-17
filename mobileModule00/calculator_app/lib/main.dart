@@ -85,7 +85,11 @@ class _MyCalculatorState extends State<MyCalculator> {
           ContextModel cm = ContextModel();
           var evaluator = RealEvaluator(cm);
           num evalResult = evaluator.evaluate(simplifiedExp);
-          _result = evalResult.toString();
+          if (evalResult.toString().length > 10) {
+            _result = evalResult.toStringAsPrecision(10);
+          } else {
+            _result = evalResult.toString();
+          }
           _calculation = '';
         } catch (e) {
           _result = 'Erreur';
@@ -145,8 +149,8 @@ class _DisplaySection extends StatelessWidget {
               child: Text(
                 calculationText,
                 style: const TextStyle(fontSize: 24, color: Colors.grey),
-                maxLines: null,
-                overflow: TextOverflow.fade,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.right,
               ),
             ),
