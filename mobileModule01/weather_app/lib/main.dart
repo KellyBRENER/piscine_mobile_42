@@ -19,7 +19,8 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-class MyHomePage extends StatelessWidget {
+
+class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
 	static const List<Tab> _tabList = [
@@ -29,6 +30,17 @@ class MyHomePage extends StatelessWidget {
 	];
 
   @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+	String _location = '';
+	void _handleLocation(String locationTapped) {
+		setState(() {
+		  _location = locationTapped;
+		});
+	}
+  @override
   Widget build(BuildContext context) {
     return SafeArea(
 	  child: DefaultTabController(
@@ -36,16 +48,31 @@ class MyHomePage extends StatelessWidget {
 			child: Scaffold(
 				appBar: AppBar(
 					backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-					title: Text('Weather App'),
-					// bottom: const TabBar(tabs: _tabList),
+					title: Row(
+						children: [
+							IconButton(onPressed: () {//rechercher une localité et l'assigner à _location
+							}, icon: Icon(Icons.location_on)),
+							Expanded(
+								child: TextField(
+									maxLines: 1,
+									style: TextStyle(fontSize: 18),
+									onSubmitted: (String value) {_handleLocation(value);},
+									decoration: InputDecoration(
+										hintText: 'Entrez une localité...',
+										prefixIcon: Icon(Icons.search),
+										),
+									),
+								)
+						],
+					)
 					),
-				body: const TabBarView(children: [
-					Center(child: Text('Currently',)),
-					Center(child: Text('Today'),),
-					Center(child: Text('Weekly'),),
+				body: TabBarView(children: [
+					CurrentlyPage(location: _location),
+					TodayPage(location: _location),
+					WeeklyPage(location: _location),
 				],),
 				bottomNavigationBar: const TabBar(
-					tabs: _tabList,
+					tabs: MyHomePage._tabList,
 					overlayColor: WidgetStatePropertyAll(Colors.deepPurple),
 					),
 			),
@@ -54,6 +81,68 @@ class MyHomePage extends StatelessWidget {
   }
 }
 
+class CurrentlyPage extends StatelessWidget {
+  const CurrentlyPage({
+    super.key,
+    required String location,
+  }) : _location = location;
+
+  final String _location;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+    	child: Column(
+    		children: [
+    			Text('Currently',),
+    			Text(_location),
+    		]
+    	)
+    );
+  }
+}
+
+class TodayPage extends StatelessWidget {
+  const TodayPage({
+    super.key,
+    required String location,
+  }) : _location = location;
+
+  final String _location;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+    	child: Column(
+    		children: [
+    			Text('Today',),
+    			Text(_location),
+    		]
+    	)
+    );
+  }
+}
+
+class WeeklyPage extends StatelessWidget {
+  const WeeklyPage({
+    super.key,
+    required String location,
+  }) : _location = location;
+
+  final String _location;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+    	child: Column(
+    		children: [
+    			Text('Weekly',),
+    			Text(_location),
+    		]
+    	)
+    );
+  }
+}
 // class MyHomePage extends StatefulWidget {
 //   const MyHomePage({super.key, required this.title});
 //   final String title;
