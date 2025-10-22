@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'widget/geolocation.dart';
 
 void main() {
   runApp(const MyApp());
@@ -34,12 +36,42 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-	String _location = '';
-	void _handleLocation(String locationTapped) {
-		setState(() {
-		  _location = locationTapped;
-		});
-	}
+	Position? _currentPosition;
+  String _error = '';
+  String _currentCity = '';
+
+	void _handleLocation(String cityTapped) async {
+    try {
+      if (cityTapped.isNotEmpty) {
+        final position = await getPositionFromCity(cityTapped);
+        setState(() {
+          _currentPosition = position;
+          _currentCity = cityTapped;
+          _error = '';
+        });
+      } else {
+        final position = await determinePosition();
+        final city = await getCityFromPosition(position);
+        setState((){
+          _currentPosition = position;
+          _error = '';
+          _currentCity = city;
+        });
+      }
+    } catch (e) {
+        setState(() {
+          _currentPosition = null;
+          _error = e.toString();
+        });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _handleLocation('');
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -50,12 +82,12 @@ class _MyHomePageState extends State<MyHomePage> {
 					backgroundColor: Theme.of(context).colorScheme.inversePrimary,
 					title: Row(
 						children: [
-							IconButton(onPressed: () {_handleLocation('Geolocation');}, icon: Icon(Icons.location_on)),
+							IconButton(onPressed: () {_handleLocation('');}, icon: Icon(Icons.location_on)),
 							Expanded(
 								child: TextField(
 									maxLines: 1,
 									style: TextStyle(fontSize: 18),
-									onSubmitted: (String value) {_handleLocation(value);},
+									onSubmitted: (String value) {_handleLocation(value);},//à implémenter
 									decoration: InputDecoration(
 										hintText: 'Entrez une localité...',
 										prefixIcon: Icon(Icons.search),
@@ -66,9 +98,9 @@ class _MyHomePageState extends State<MyHomePage> {
 					)
 					),
 				body: TabBarView(children: [
-					CurrentlyPage(location: _location),
-					TodayPage(location: _location),
-					WeeklyPage(location: _location),
+					CurrentlyPage(location: _currentCity),
+					TodayPage(location: _currentCity),
+					WeeklyPage(location: _currentCity),
 				],),
 				bottomNavigationBar: const TabBar(
 					tabs: MyHomePage._tabList,
