@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'widget/geolocation.dart';
 
+//affiche error si pas de permission mais ne la demande pas
+//demande la permission si appuie sur localisation / puis l'activation du gps
+//si refus d'activation, n'affiche pas le message d'erreur
+//si acceptation, ne va pas chercher les coordonnées automatiquement, il faut rappuyer sur localisation
 void main() {
   runApp(const MyApp());
 }
@@ -36,44 +40,121 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
-	Position? _currentPosition;
+  List<double>? _coordinate;
   String _error = '';
   String _currentCity = '';
   bool _serviceEnabled = false;
+  LocationPermission? _permission;
+  bool _otherCity = false;
 
-	void _handleLocation(String cityTapped) async {
-    try {
-      _showSettingsDialog(context: context);
-      if (cityTapped.isNotEmpty) {
-        setState(() {
-          _currentPosition = null;
-          _currentCity = cityTapped;
-          _error = '';
-        });
-      } else {
-        if (_serviceEnabled == false) {
-          setState(() {
-            _currentPosition = null;
-            _error = 'GPS desactivé';
-            _currentCity = '';
-          });
-        }
-        final position = await determinePosition();
-        final city = await getCityFromPosition(position);
-        setState((){
-          _currentPosition = position;
-          _error = '';
-          _currentCity = city;
-        });
-      }
-    } catch (e) {
-        setState(() {
-          _currentCity = '';
-          _currentPosition = null;
-          _error = e.toString();
+    Future<void> _showSettingsDialog({required BuildContext context}) async {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("GPS désactivée"),
+            content: Text("voulez vous activer le GPS"),
+            actions: [
+              TextButton(
+                child: const Text("NON"),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              TextButton(
+                child: const Text("OUI"),
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await Geolocator.openLocationSettings();
+                },
+              ),
+            ],
+          );
         });
     }
+
+
+	void _handleLocation(String cityTapped) async {
+
+  try {
+    if (cityTapped.isNotEmpty) {
+      final coordinate = await getPositionFromCity(cityTapped);
+      setState(() {
+        _otherCity = true;
+        _coordinate = coordinate;
+        _currentCity = cityTapped;
+        _error = '';
+        return;
+      });
+    } else {
+    //vérification des permissions
+    _error = '';
+    await checkPermission();
+    if (_error.isNotEmpty) {
+      return;
+    }
+    //si permission ok, vérif dispo GPS
+    _serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!_serviceEnabled) {
+      if (!mounted) {return;}
+      await _showSettingsDialog(context: context);
+      _serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      Future.delayed(const Duration(seconds: 2), () {
+        if (!_serviceEnabled) {
+          _otherCity = false;
+          _coordinate = null;
+          _currentCity = '';
+          _error = "GPS désactivé, veuillez renseigner une localité";
+          return;
+        }
+      });
+    }
+    await locationUpdate();
+    }
+  } catch (e) {
+    setState(() {
+      _otherCity = false;
+      _currentCity = '';
+      _coordinate = null;
+      _error = e.toString();
+    });
   }
+  }
+
+	Future<void> locationUpdate() async {
+	  final position = await Geolocator.getCurrentPosition();
+	  final city = await getCityFromPosition(position);
+	  setState((){
+      _otherCity = false;
+	    _coordinate = [position.latitude, position.longitude];
+	    _error = '';
+	    _currentCity = city;
+	    return;
+	  });
+	}
+
+	Future<void> checkPermission() async {
+	  _permission = await Geolocator.checkPermission();
+	  if (_permission == LocationPermission.denied) {
+	    _permission = await Geolocator.requestPermission();
+	    if (_permission == LocationPermission.deniedForever) {
+	      setState(() {
+          _otherCity = false;
+	        _coordinate = null;
+	        _currentCity = '';
+	        _error = "permission d'accés GPS refusée, veuillez renseigner une localité";
+	        return;
+	      });
+	    }
+	  }
+	  if (_permission == LocationPermission.denied) {
+	    setState(() {
+        _otherCity = false;
+	      _coordinate = null;
+	      _currentCity = '';
+	      _error = "permission d'accés GPS refusée, veuillez renseigner une localité";
+	      return;
+	    });
+	  }
+	}
 
   @override
   void initState() {
@@ -90,36 +171,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 
   @override
   void didChangeAppLifeCycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed && _otherCity == false) {
       _handleLocation('');
-    }
-  }
-
-  void _showSettingsDialog({required BuildContext context}) async {
-    _serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!_serviceEnabled) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text("geolocalisation désactivée"),
-            content: Text("voulez vous activer la géolocalisation"),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text("NON"),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  await Geolocator.openLocationSettings();
-                },
-                child: const Text("OUI")
-              ),
-            ],
-          );
-        });
-      return Future.error("Service de localisation désactivé, veuillez l'activer.");
     }
   }
 
@@ -149,9 +202,21 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 					)
 					),
 				body: TabBarView(children: [
-					CurrentlyPage(location: _currentCity),
-					TodayPage(location: _currentCity),
-					WeeklyPage(location: _currentCity),
+					CurrentlyPage(
+            city: _currentCity,
+            coordinate : _coordinate,
+            error: _error,
+            ),
+					TodayPage(
+            city: _currentCity,
+            coordinate : _coordinate,
+            error: _error,
+            ),
+					WeeklyPage(
+            city: _currentCity,
+            coordinate : _coordinate,
+            error: _error,
+            ),
 				],),
 				bottomNavigationBar: const TabBar(
 					tabs: MyHomePage._tabList,
@@ -167,10 +232,14 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 class CurrentlyPage extends StatelessWidget {
   const CurrentlyPage({
     super.key,
-    required String location,
-  }) : _location = location;
+    required String city,
+    required List<double>? coordinate,
+    required String error,
+  }) : _city = city, _coordinate = coordinate, _error = error;
 
-  final String _location;
+  final String _city;
+  final List<double>? _coordinate;
+  final String _error;
 
   @override
   Widget build(BuildContext context) {
@@ -180,7 +249,9 @@ class CurrentlyPage extends StatelessWidget {
 			crossAxisAlignment: CrossAxisAlignment.center,
     		children: [
     			Text('Currently', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
-    			Text(_location, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.lightBlueAccent),),
+  			  Text(_city.isNotEmpty && _coordinate != null ? "$_city, latitude : ${_coordinate![0].toStringAsFixed(2)} et longitude : ${_coordinate![1].toStringAsFixed(2)}" : "erreur : $_error",
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
     		]
     	)
     );
@@ -190,10 +261,14 @@ class CurrentlyPage extends StatelessWidget {
 class TodayPage extends StatelessWidget {
   const TodayPage({
     super.key,
-    required String location,
-  }) : _location = location;
+    required String city,
+    required List<double>? coordinate,
+    required String error,
+  }) : _city = city, _coordinate = coordinate, _error = error;
 
-  final String _location;
+  final String _city;
+  final List<double>? _coordinate;
+  final String _error;
 
   @override
   Widget build(BuildContext context) {
@@ -202,8 +277,10 @@ class TodayPage extends StatelessWidget {
 			mainAxisAlignment: MainAxisAlignment.center,
 			crossAxisAlignment: CrossAxisAlignment.center,
     		children: [
-    			Text('Today',style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
-    			Text(_location, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.lightBlueAccent),),
+    			Text('Today', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
+  			  Text(_city.isNotEmpty && _coordinate != null ? "$_city, latitude : ${_coordinate![0].toStringAsFixed(2)} et longitude : ${_coordinate![1].toStringAsFixed(2)}" : "erreur : $_error",
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
     		]
     	)
     );
@@ -213,10 +290,14 @@ class TodayPage extends StatelessWidget {
 class WeeklyPage extends StatelessWidget {
   const WeeklyPage({
     super.key,
-    required String location,
-  }) : _location = location;
+    required String city,
+    required List<double>? coordinate,
+    required String error,
+  }) : _city = city, _coordinate = coordinate, _error = error;
 
-  final String _location;
+  final String _city;
+  final List<double>? _coordinate;
+  final String _error;
 
   @override
   Widget build(BuildContext context) {
@@ -225,8 +306,10 @@ class WeeklyPage extends StatelessWidget {
 			mainAxisAlignment: MainAxisAlignment.center,
 			crossAxisAlignment: CrossAxisAlignment.center,
     		children: [
-    			Text('Weekly',style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
-    			Text(_location, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.lightBlueAccent),),
+    			Text('Weekly', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
+  			  Text(_city.isNotEmpty && _coordinate != null ? "$_city, latitude : ${_coordinate![0].toStringAsFixed(2)} et longitude : ${_coordinate![1].toStringAsFixed(2)}" : "erreur : $_error",
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
     		]
     	)
     );

@@ -7,7 +7,12 @@ import 'package:geolocator/geolocator.dart';
 /// are denied the `Future` will return an error.
 Future<Position?> determinePosition() async {
   LocationPermission permission;
+  bool serviceEnabled;
 
+  serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) {
+    return Future.error("GPS désactivé");
+  }
   permission = await Geolocator.checkPermission();
   if (permission == LocationPermission.denied) {
     permission = await Geolocator.requestPermission();
@@ -44,14 +49,14 @@ Future<String> getCityFromPosition(Position? position) async {
 }
 
 // Fonction pour obtenir les coordonnées à partir du nom d'une ville
-Future<Location?> getPositionFromCity(String city) async {
+Future<List<double>?> getPositionFromCity(String city) async {
   try {
     // La fonction retourne une liste de "Location" (coordonnées potentielles)
     List<Location> locations = await locationFromAddress(city);
 
     if (locations.isNotEmpty) {
       // Créer et retourner un objet Position simple
-      return locations.first;
+      return [locations.first.latitude, locations.first.longitude];
     }
     return null;
 
