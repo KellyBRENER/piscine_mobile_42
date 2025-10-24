@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'widget/geolocation.dart';
 
-//affiche error si pas de permission mais ne la demande pas
-//demande la permission si appuie sur localisation / puis l'activation du gps
-//si refus d'activation, n'affiche pas le message d'erreur
-//si acceptation, ne va pas chercher les coordonnées automatiquement, il faut rappuyer sur localisation
+//au demarrage de l'appli affiche erreur
 void main() {
   runApp(const MyApp());
 }
@@ -43,71 +40,38 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   List<double>? _coordinate;
   String _error = '';
   String _currentCity = '';
-  bool _serviceEnabled = false;
   LocationPermission? _permission;
   bool _otherCity = false;
-
-    Future<void> _showSettingsDialog({required BuildContext context}) async {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text("GPS désactivée"),
-            content: Text("voulez vous activer le GPS"),
-            actions: [
-              TextButton(
-                child: const Text("NON"),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              TextButton(
-                child: const Text("OUI"),
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  await Geolocator.openLocationSettings();
-                },
-              ),
-            ],
-          );
-        });
-    }
-
 
 	void _handleLocation(String cityTapped) async {
 
   try {
     if (cityTapped.isNotEmpty) {
       final coordinate = await getPositionFromCity(cityTapped);
-      setState(() {
-        _otherCity = true;
-        _coordinate = coordinate;
-        _currentCity = cityTapped;
-        _error = '';
-        return;
-      });
+	  if (coordinate == null) {
+		setState(() {
+		  _otherCity = true;
+		  _coordinate = null;
+		  _currentCity = cityTapped;
+		  _error = "la localité n'a pas été trouvée";
+		  return;
+		});
+	  } else {
+	      setState(() {
+    	    _otherCity = true;
+        	_coordinate = coordinate;
+        	_currentCity = cityTapped;
+        	_error = '';
+        	return;
+      	});
+	  }
     } else {
     //vérification des permissions
-    _error = '';
-    await checkPermission();
-    if (_error.isNotEmpty) {
-      return;
-    }
-    //si permission ok, vérif dispo GPS
-    _serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!_serviceEnabled) {
-      if (!mounted) {return;}
-      await _showSettingsDialog(context: context);
-      _serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      Future.delayed(const Duration(seconds: 2), () {
-        if (!_serviceEnabled) {
-          _otherCity = false;
-          _coordinate = null;
-          _currentCity = '';
-          _error = "GPS désactivé, veuillez renseigner une localité";
-          return;
-        }
-      });
-    }
-    await locationUpdate();
+    	_error = '';
+    	await checkPermission();
+    	if (_error.isNotEmpty) {
+    	  return;
+    	} else {await locationUpdate();}
     }
   } catch (e) {
     setState(() {
@@ -121,10 +85,11 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 
 	Future<void> locationUpdate() async {
 	  final position = await Geolocator.getCurrentPosition();
+	  await Geolocator.isLocationServiceEnabled();
 	  final city = await getCityFromPosition(position);
 	  setState((){
-      _otherCity = false;
-	    _coordinate = [position.latitude, position.longitude];
+      	_otherCity = false;
+	  	_coordinate = [position.latitude, position.longitude];
 	    _error = '';
 	    _currentCity = city;
 	    return;
@@ -249,7 +214,7 @@ class CurrentlyPage extends StatelessWidget {
 			crossAxisAlignment: CrossAxisAlignment.center,
     		children: [
     			Text('Currently', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
-  			  Text(_city.isNotEmpty && _coordinate != null ? "$_city, latitude : ${_coordinate![0].toStringAsFixed(2)} et longitude : ${_coordinate![1].toStringAsFixed(2)}" : "erreur : $_error",
+  			  Text(_city.isNotEmpty && _coordinate != null ? "$_city, latitude : ${_coordinate![0].toStringAsFixed(2)} et longitude : ${_coordinate![1].toStringAsFixed(2)}" : _error.isEmpty ? "" : "erreur : $_error",
           textAlign: TextAlign.center,
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
     		]
@@ -278,7 +243,7 @@ class TodayPage extends StatelessWidget {
 			crossAxisAlignment: CrossAxisAlignment.center,
     		children: [
     			Text('Today', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
-  			  Text(_city.isNotEmpty && _coordinate != null ? "$_city, latitude : ${_coordinate![0].toStringAsFixed(2)} et longitude : ${_coordinate![1].toStringAsFixed(2)}" : "erreur : $_error",
+  			  Text(_city.isNotEmpty && _coordinate != null ? "$_city, latitude : ${_coordinate![0].toStringAsFixed(2)} et longitude : ${_coordinate![1].toStringAsFixed(2)}" : _error.isEmpty ? "" : "erreur : $_error",
           textAlign: TextAlign.center,
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
     		]
@@ -307,7 +272,7 @@ class WeeklyPage extends StatelessWidget {
 			crossAxisAlignment: CrossAxisAlignment.center,
     		children: [
     			Text('Weekly', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
-  			  Text(_city.isNotEmpty && _coordinate != null ? "$_city, latitude : ${_coordinate![0].toStringAsFixed(2)} et longitude : ${_coordinate![1].toStringAsFixed(2)}" : "erreur : $_error",
+  			  Text(_city.isNotEmpty && _coordinate != null ? "$_city, latitude : ${_coordinate![0].toStringAsFixed(2)} et longitude : ${_coordinate![1].toStringAsFixed(2)}" : _error.isEmpty ? "" : "erreur : $_error",
           textAlign: TextAlign.center,
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
     		]
