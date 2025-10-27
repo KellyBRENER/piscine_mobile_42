@@ -157,11 +157,11 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 							IconButton(onPressed: () {_handleLocation('');}, icon: Icon(Icons.location_on)),
 							Expanded(
 								child: CitySearchField(
-                  onCitySelected: (city, lat, lon) {
+                  onCitySelected: (city, coordinate, error) {
                     setState(() {
                       _currentCity = city;
-                      _coordinate = [lat, lon];
-                      _error = '';
+                      _coordinate = coordinate;
+                      _error = error;
                     });
                   },
 									),
@@ -286,7 +286,7 @@ class WeeklyPage extends StatelessWidget {
 
 class CitySearchField extends StatefulWidget {
   //fonction callback qui sera appelé quand l'utilisateur sélectionne une ville / renvoie city/lat/lon
-  final Function(String city, double lat, double lon) onCitySelected;
+  final Function(String city, List<double>? coordinate, String error) onCitySelected;
 
   const CitySearchField({super.key, required this.onCitySelected});
   @override
@@ -297,6 +297,7 @@ class _CitySearchFieldState extends State<CitySearchField> {
   //controle le texte du textField
   final TextEditingController _controller = TextEditingController();
   final LayerLink _layerLink = LayerLink();//lien entre le textField et l'objet overlay (overLayEntry)
+  final FocusNode _focusNode = FocusNode();
 
   List<Map<String, dynamic>> _suggestions = [];
   bool _isloading = false;
@@ -340,8 +341,16 @@ class _CitySearchFieldState extends State<CitySearchField> {
     _debounce = Timer(const Duration(milliseconds: 500), () => _fetchSuggestions(value));
   }
 
+  void _handleSelection(String city, List<double>? coordinate, String error) {
+    widget.onCitySelected(city, coordinate, error);
+    _removeOverlay();
+    FocusScope.of(context).unfocus();
+    setState(() => _suggestions = []);
+  }
+
   void _showOverLay() {
     _removeOverlay();
+    if (_suggestions.isEmpty) return;
 
     final overLay = Overlay.of(context);
 
@@ -362,6 +371,7 @@ class _CitySearchFieldState extends State<CitySearchField> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 200),
               child: ListView.separated(//affiche les suggestions
+                padding: EdgeInsets.zero,
                 shrinkWrap: true,
                 itemCount: _suggestions.length,
                 separatorBuilder: (context, index) => Divider(
@@ -377,12 +387,7 @@ class _CitySearchFieldState extends State<CitySearchField> {
                     title: Text(displayName),
                     onTap: () {
                       _controller.text = s['name'];
-                      widget.onCitySelected(
-                        s['name'],
-                        s['lat'],
-                        s['lon'],
-                      );
-                      _removeOverlay();
+                      _handleSelection(s['name'],[s['lat'], s['lon'],], "");
                     },
                   );
                 },//itemBuilder
@@ -402,9 +407,24 @@ class _CitySearchFieldState extends State<CitySearchField> {
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _debounce?.cancel();
     _removeOverlay();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus) {
+        setState(() {
+          _suggestions = [];
+        });
+        _removeOverlay();
+      }
+    });
   }
 
   @override
@@ -412,28 +432,26 @@ class _CitySearchFieldState extends State<CitySearchField> {
     return CompositedTransformTarget(//ajoute un repère sur textField
       link: _layerLink,
       child: TextField(
+        focusNode: _focusNode,
         controller: _controller,
-        onSubmitted: (value) {
+        onSubmitted: (value) async {
           if (value.isNotEmpty) {
             final match = _suggestions.firstWhere(
               (s) => s['name'].toLowerCase() == value.toLowerCase(),
               orElse: () => {},
             );
             if (match.isNotEmpty) {
-              widget.onCitySelected(match['name'], match['lat'], match['lon']);
+              _handleSelection(match['name'], [match['lat'], match['lon'],], "");
             } else {
               _fetchSuggestions(value).then((_) {
                 if (_suggestions.isNotEmpty) {
                   final s = _suggestions.first;
-                  widget.onCitySelected(s['name'], s['lat'], s['lon']);
+                  _handleSelection(s['name'], [s['lat'], s['lon']], "");
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Aucune localité trouvée pour "$value"')),
-                    );
+                  _handleSelection('', null, "aucune localité trouvée pour '$value'");
                 }
               });
             }
-            setState(() => _suggestions = []);
           }
         },
         onChanged: _onChanged,
