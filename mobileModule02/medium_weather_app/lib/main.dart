@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'widget/geolocation.dart';
+import 'package:http/http.dart' as http;//pour faire des requete http
+import 'dart:async';//pour utiliser debounce (qui permet d'attendre un délai avant une action)
+import 'dart:convert';//pour décoder le JSON de la réponse http
 
 //au demarrage de l'appli affiche erreur
 void main() {
@@ -153,14 +156,14 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 						children: [
 							IconButton(onPressed: () {_handleLocation('');}, icon: Icon(Icons.location_on)),
 							Expanded(
-								child: TextField(
-									maxLines: 1,
-									style: TextStyle(fontSize: 18),
-									onSubmitted: (String value) {_handleLocation(value);},//à implémenter
-									decoration: InputDecoration(
-										hintText: 'Entrez une localité...',
-										prefixIcon: Icon(Icons.search),
-										),
+								child: CitySearchField(
+                  onCitySelected: (city, lat, lon) {
+                    setState(() {
+                      _currentCity = city;
+                      _coordinate = [lat, lon];
+                      _error = '';
+                    });
+                  },
 									),
 								)
 						],
@@ -277,6 +280,178 @@ class WeeklyPage extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
     		]
     	)
+    );
+  }
+}
+
+class CitySearchField extends StatefulWidget {
+  //fonction callback qui sera appelé quand l'utilisateur sélectionne une ville / renvoie city/lat/lon
+  final Function(String city, double lat, double lon) onCitySelected;
+
+  const CitySearchField({super.key, required this.onCitySelected});
+  @override
+  State<CitySearchField> createState() => _CitySearchFieldState();
+}
+
+class _CitySearchFieldState extends State<CitySearchField> {
+  //controle le texte du textField
+  final TextEditingController _controller = TextEditingController();
+  final LayerLink _layerLink = LayerLink();//lien entre le textField et l'objet overlay (overLayEntry)
+
+  List<Map<String, dynamic>> _suggestions = [];
+  bool _isloading = false;
+  Timer? _debounce;//timer pour ne pas appeler l'API a chaque frappe
+  OverlayEntry? _overlayEntry;//objet qui sera overLay
+
+  Future<void> _fetchSuggestions(String query) async {
+    if (query.isEmpty) {
+      _removeOverlay();
+      return;
+    }
+    setState(() => _isloading = true);
+    final url = Uri.parse(
+      'https://geocoding-api.open-meteo.com/v1/search?name=$query&count=5&language=fr&format=json'
+      );
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final results = data['results'] as List<dynamic>?;
+        _suggestions = results != null
+          ? results.map((r) => {
+            'name' : r['name'],
+            'country' : r['country'],
+            'lat' : r['latitude'],
+            'lon' : r['longitude'],
+            'admin' : r['admin1'],
+          }).toList()
+          : [];
+        _showOverLay();//crée l'overlay
+      }
+    } catch(e) {
+      _removeOverlay();
+    } finally {//dans tous les cas, _isloading est false à la fin
+      setState(() => _isloading = false);
+    }
+  }
+
+  void _onChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () => _fetchSuggestions(value));
+  }
+
+  void _showOverLay() {
+    _removeOverlay();
+
+    final overLay = Overlay.of(context);
+
+    final renderBox = context.findRenderObject() as RenderBox;
+    final size = renderBox.size;//pour récupérer les dimensions de la target (textfield)
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(//fixe la largeur de l'overlay à celle du champs
+        width: size.width,
+        child:CompositedTransformFollower(//positionne un overlay sur la target
+          showWhenUnlinked: false,
+          link: _layerLink,
+          offset: Offset(0.0, size.height + 5.0),
+          child: Material(
+            elevation: 4.0,
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: ListView.separated(//affiche les suggestions
+                shrinkWrap: true,
+                itemCount: _suggestions.length,
+                separatorBuilder: (context, index) => Divider(
+                  height: 1,
+                  color: Colors.grey.shade300,
+                ),
+                itemBuilder: (context, index) {
+                  final s = _suggestions[index];
+                  final displayName = s['admin'] != null
+                  ? "${s['name']} (${s['admin']}, ${s['country']})"
+                  : "${s['name']} (${s['country']})";
+                  return ListTile(
+                    title: Text(displayName),
+                    onTap: () {
+                      _controller.text = s['name'];
+                      widget.onCitySelected(
+                        s['name'],
+                        s['lat'],
+                        s['lon'],
+                      );
+                      _removeOverlay();
+                    },
+                  );
+                },//itemBuilder
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    overLay.insert(_overlayEntry!);
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _removeOverlay();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CompositedTransformTarget(//ajoute un repère sur textField
+      link: _layerLink,
+      child: TextField(
+        controller: _controller,
+        onSubmitted: (value) {
+          if (value.isNotEmpty) {
+            final match = _suggestions.firstWhere(
+              (s) => s['name'].toLowerCase() == value.toLowerCase(),
+              orElse: () => {},
+            );
+            if (match.isNotEmpty) {
+              widget.onCitySelected(match['name'], match['lat'], match['lon']);
+            } else {
+              _fetchSuggestions(value).then((_) {
+                if (_suggestions.isNotEmpty) {
+                  final s = _suggestions.first;
+                  widget.onCitySelected(s['name'], s['lat'], s['lon']);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Aucune localité trouvée pour "$value"')),
+                    );
+                }
+              });
+            }
+            setState(() => _suggestions = []);
+          }
+        },
+        onChanged: _onChanged,
+        decoration: InputDecoration(
+          hintText: "Entrez une localité...",
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _isloading
+            ? const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          : null,
+        ),
+      ),
     );
   }
 }
