@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;//pour faire des requete http
 import 'dart:async';//pour utiliser debounce (qui permet d'attendre un délai avant une action)
 import 'dart:convert';//pour décoder le JSON de la réponse http
 
-//au demarrage de l'appli affiche erreur
 void main() {
   runApp(const MyApp());
 }
@@ -40,64 +39,10 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
-  List<double>? _coordinate;
+  Map<String, dynamic>? _locationData;
   String _error = '';
-  String _currentCity = '';
   LocationPermission? _permission;
   bool _otherCity = false;
-
-	void _handleLocation(String cityTapped) async {
-
-  try {
-    if (cityTapped.isNotEmpty) {
-      final coordinate = await getPositionFromCity(cityTapped);
-	  if (coordinate == null) {
-		setState(() {
-		  _otherCity = true;
-		  _coordinate = null;
-		  _currentCity = cityTapped;
-		  _error = "la localité n'a pas été trouvée";
-		  return;
-		});
-	  } else {
-	      setState(() {
-    	    _otherCity = true;
-        	_coordinate = coordinate;
-        	_currentCity = cityTapped;
-        	_error = '';
-        	return;
-      	});
-	  }
-    } else {
-    //vérification des permissions
-    	_error = '';
-    	await checkPermission();
-    	if (_error.isNotEmpty) {
-    	  return;
-    	} else {await locationUpdate();}
-    }
-  } catch (e) {
-    setState(() {
-      _otherCity = false;
-      _currentCity = '';
-      _coordinate = null;
-      _error = e.toString();
-    });
-  }
-  }
-
-	Future<void> locationUpdate() async {
-	  final position = await Geolocator.getCurrentPosition();
-	  await Geolocator.isLocationServiceEnabled();
-	  final city = await getCityFromPosition(position);
-	  setState((){
-      	_otherCity = false;
-	  	_coordinate = [position.latitude, position.longitude];
-	    _error = '';
-	    _currentCity = city;
-	    return;
-	  });
-	}
 
 	Future<void> checkPermission() async {
 	  _permission = await Geolocator.checkPermission();
@@ -106,8 +51,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 	    if (_permission == LocationPermission.deniedForever) {
 	      setState(() {
           _otherCity = false;
-	        _coordinate = null;
-	        _currentCity = '';
+          _locationData = null;
 	        _error = "permission d'accés GPS refusée, veuillez renseigner une localité";
 	        return;
 	      });
@@ -116,19 +60,53 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 	  if (_permission == LocationPermission.denied) {
 	    setState(() {
         _otherCity = false;
-	      _coordinate = null;
-	      _currentCity = '';
+        _locationData = null;
 	      _error = "permission d'accés GPS refusée, veuillez renseigner une localité";
 	      return;
 	    });
 	  }
 	}
 
+	void _handleLocation() async {
+    try {
+    //vérification des permissions
+    	_error = '';
+    	await checkPermission();
+    	if (_error.isNotEmpty) {
+    	  return;
+    	} else {
+        final position = await Geolocator.getCurrentPosition();
+	      await Geolocator.isLocationServiceEnabled();
+	      final locationData = await getCityFromPosition(position);
+        if (locationData != null) {
+	        setState(() {
+      	    _otherCity = false;
+	  	      _error = '';
+            _locationData = locationData;
+	          return;
+          });
+        } else {
+          setState(() {
+            _otherCity = false;
+            _error = "pas de localité trouvée pour cette position";
+            _locationData = null;
+          });
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _otherCity = false;
+        _locationData = null;
+        _error = e.toString();
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _handleLocation('');
+    _handleLocation();
   }
 
   @override
@@ -140,7 +118,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   @override
   void didChangeAppLifeCycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && _otherCity == false) {
-      _handleLocation('');
+      _handleLocation();
     }
   }
 
@@ -154,14 +132,14 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 					backgroundColor: Theme.of(context).colorScheme.inversePrimary,
 					title: Row(
 						children: [
-							IconButton(onPressed: () {_handleLocation('');}, icon: Icon(Icons.location_on)),
+							IconButton(onPressed: () {_handleLocation();}, icon: Icon(Icons.location_on)),
 							Expanded(
 								child: CitySearchField(
-                  onCitySelected: (city, coordinate, error) {
+                  onCitySelected: (locationData, error) {
                     setState(() {
-                      _currentCity = city;
-                      _coordinate = coordinate;
+                      _locationData = locationData;
                       _error = error;
+                      _otherCity = true;
                     });
                   },
 									),
@@ -170,19 +148,19 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 					)
 					),
 				body: TabBarView(children: [
-					CurrentlyPage(
-            city: _currentCity,
-            coordinate : _coordinate,
+					WeatherPage(
+            title: "Currently",
+            locationData: _locationData,
             error: _error,
             ),
-					TodayPage(
-            city: _currentCity,
-            coordinate : _coordinate,
+          WeatherPage(
+            title: "Today",
+            locationData: _locationData,
             error: _error,
             ),
-					WeeklyPage(
-            city: _currentCity,
-            coordinate : _coordinate,
+          WeatherPage(
+            title: "Weekly",
+            locationData: _locationData,
             error: _error,
             ),
 				],),
@@ -197,17 +175,17 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   }
 }
 
-class CurrentlyPage extends StatelessWidget {
-  const CurrentlyPage({
+class WeatherPage extends StatelessWidget {
+  const WeatherPage({
     super.key,
-    required String city,
-    required List<double>? coordinate,
+    required Map<String, dynamic>? locationData,
     required String error,
-  }) : _city = city, _coordinate = coordinate, _error = error;
+    required String title,
+  }) : _locationData = locationData, _error = error, _title = title;
 
-  final String _city;
-  final List<double>? _coordinate;
+  final Map<String, dynamic>? _locationData;
   final String _error;
+  final String _title;
 
   @override
   Widget build(BuildContext context) {
@@ -216,66 +194,8 @@ class CurrentlyPage extends StatelessWidget {
 			mainAxisAlignment: MainAxisAlignment.center,
 			crossAxisAlignment: CrossAxisAlignment.center,
     		children: [
-    			Text('Currently', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
-  			  Text(_city.isNotEmpty && _coordinate != null ? "$_city, latitude : ${_coordinate![0].toStringAsFixed(2)} et longitude : ${_coordinate![1].toStringAsFixed(2)}" : _error.isEmpty ? "" : "erreur : $_error",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
-    		]
-    	)
-    );
-  }
-}
-
-class TodayPage extends StatelessWidget {
-  const TodayPage({
-    super.key,
-    required String city,
-    required List<double>? coordinate,
-    required String error,
-  }) : _city = city, _coordinate = coordinate, _error = error;
-
-  final String _city;
-  final List<double>? _coordinate;
-  final String _error;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-    	child: Column(
-			mainAxisAlignment: MainAxisAlignment.center,
-			crossAxisAlignment: CrossAxisAlignment.center,
-    		children: [
-    			Text('Today', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
-  			  Text(_city.isNotEmpty && _coordinate != null ? "$_city, latitude : ${_coordinate![0].toStringAsFixed(2)} et longitude : ${_coordinate![1].toStringAsFixed(2)}" : _error.isEmpty ? "" : "erreur : $_error",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
-    		]
-    	)
-    );
-  }
-}
-
-class WeeklyPage extends StatelessWidget {
-  const WeeklyPage({
-    super.key,
-    required String city,
-    required List<double>? coordinate,
-    required String error,
-  }) : _city = city, _coordinate = coordinate, _error = error;
-
-  final String _city;
-  final List<double>? _coordinate;
-  final String _error;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-    	child: Column(
-			mainAxisAlignment: MainAxisAlignment.center,
-			crossAxisAlignment: CrossAxisAlignment.center,
-    		children: [
-    			Text('Weekly', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
-  			  Text(_city.isNotEmpty && _coordinate != null ? "$_city, latitude : ${_coordinate![0].toStringAsFixed(2)} et longitude : ${_coordinate![1].toStringAsFixed(2)}" : _error.isEmpty ? "" : "erreur : $_error",
+    			Text(_title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
+  			  Text(_locationData != null ? "${_locationData!['name']}, latitude : ${_locationData!['lat'].toStringAsFixed(2)} et longitude : ${_locationData!['lat'].toStringAsFixed(2)}" : _error.isEmpty ? "" : "erreur : $_error",
           textAlign: TextAlign.center,
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
     		]
@@ -286,7 +206,7 @@ class WeeklyPage extends StatelessWidget {
 
 class CitySearchField extends StatefulWidget {
   //fonction callback qui sera appelé quand l'utilisateur sélectionne une ville / renvoie city/lat/lon
-  final Function(String city, List<double>? coordinate, String error) onCitySelected;
+  final Function(Map<String, dynamic>? locationData, String error) onCitySelected;
 
   const CitySearchField({super.key, required this.onCitySelected});
   @override
@@ -341,8 +261,8 @@ class _CitySearchFieldState extends State<CitySearchField> {
     _debounce = Timer(const Duration(milliseconds: 500), () => _fetchSuggestions(value));
   }
 
-  void _handleSelection(String city, List<double>? coordinate, String error) {
-    widget.onCitySelected(city, coordinate, error);
+  void _handleSelection(Map<String, dynamic>? locationData, String error) {
+    widget.onCitySelected(locationData, error);
     _removeOverlay();
     FocusScope.of(context).unfocus();
     setState(() => _suggestions = []);
@@ -387,7 +307,7 @@ class _CitySearchFieldState extends State<CitySearchField> {
                     title: Text(displayName),
                     onTap: () {
                       _controller.text = s['name'];
-                      _handleSelection(s['name'],[s['lat'], s['lon'],], "");
+                      _handleSelection(s, "");
                     },
                   );
                 },//itemBuilder
@@ -441,14 +361,14 @@ class _CitySearchFieldState extends State<CitySearchField> {
               orElse: () => {},
             );
             if (match.isNotEmpty) {
-              _handleSelection(match['name'], [match['lat'], match['lon'],], "");
+              _handleSelection(match, "");
             } else {
               _fetchSuggestions(value).then((_) {
                 if (_suggestions.isNotEmpty) {
                   final s = _suggestions.first;
-                  _handleSelection(s['name'], [s['lat'], s['lon']], "");
+                  _handleSelection(s, "");
                 } else {
-                  _handleSelection('', null, "aucune localité trouvée pour '$value'");
+                  _handleSelection(null, "aucune localité trouvée pour '$value'");
                 }
               });
             }

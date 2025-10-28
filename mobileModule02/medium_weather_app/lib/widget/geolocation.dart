@@ -28,9 +28,9 @@ Future<Position?> determinePosition() async {
   return await Geolocator.getCurrentPosition();
 }
 
-Future<String> getCityFromPosition(Position? position) async {
+Future<Map<String, dynamic>?> getCityFromPosition(Position? position) async {
   if (position == null) {
-        return 'localisation non trouvée';
+        return null;
   }
   try {
     List<Placemark> placemarks = await placemarkFromCoordinates(
@@ -39,12 +39,15 @@ Future<String> getCityFromPosition(Position? position) async {
     );
     if (placemarks.isNotEmpty) {
       Placemark place = placemarks.first;
-      return place.locality ?? place.subAdministrativeArea ?? place.name ?? 'ville inconnue';
-    }
-    return 'localisation non trouvée';
+      return {'name' : place.locality ?? place.subAdministrativeArea ?? 'ville inconnue',
+      'admin' : place.administrativeArea ?? 'région inconnue',
+      'country' : place.country ?? 'pays inconnu',
+      'lat' : position.latitude, 'lon' : position.longitude
+      };
+    } else {return null;}
   } catch(e) {
     print("erreur de geocodage : $e");
-    return 'erreur de service de geolocalisation';
+    return null;
   }
 }
 
