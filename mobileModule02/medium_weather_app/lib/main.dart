@@ -5,6 +5,41 @@ import 'package:http/http.dart' as http;//pour faire des requete http
 import 'dart:async';//pour utiliser debounce (qui permet d'attendre un délai avant une action)
 import 'dart:convert';//pour décoder le JSON de la réponse http
 
+  final Map<int, String> weatherCodeMap = {
+  0: "Ciel clair",
+  1: "Principalement clair",
+  2: "Partiellement nuageux",
+  3: "Couvert",
+  45: "Brouillard",
+  48: "Brouillard givrant",
+  51: "Pluie fine",
+  53: "Pluie modérée",
+  55: "Pluie forte",
+  56: "Pluie verglaçante légère",
+  57: "Pluie verglaçante forte",
+  61: "Pluie faible",
+  63: "Pluie modérée",
+  65: "Pluie forte",
+  66: "Pluie verglaçante faible",
+  67: "Pluie verglaçante forte",
+  71: "Neige faible",
+  73: "Neige modérée",
+  75: "Neige forte",
+  77: "Grains de neige",
+  80: "Averse de pluie faible",
+  81: "Averse de pluie modérée",
+  82: "Averse de pluie forte",
+  85: "Averse de neige faible",
+  86: "Averse de neige forte",
+  95: "Orage",
+  96: "Orage avec pluie faible",
+  99: "Orage avec pluie forte"
+};
+
+String getWeatherDescription(int code) {
+  return weatherCodeMap[code] ?? "Code inconnu";
+}
+
 void main() {
   runApp(const MyApp());
 }
@@ -41,6 +76,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   Map<String, dynamic>? _locationData;
   String _error = '';
+  Map<String, dynamic>? _weather;
   LocationPermission? _permission;
   bool _otherCity = false;
 
@@ -85,6 +121,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
             _locationData = locationData;
 	          return;
           });
+          await _getWeather();
         } else {
           setState(() {
             _otherCity = false;
@@ -101,6 +138,41 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
       });
     }
   }
+
+  Future<void> _getWeather() async {
+    if (_locationData == null) {
+      print("locationdata null pour getweather");
+      setState(() {
+        _weather = null;
+        _error = "no data to get weather";
+      });
+    } else {
+      final url = Uri.parse(
+      'https://api.open-meteo.com/v1/forecast?latitude=${_locationData!['lat']}'
+      '&longitude=${_locationData!['lon']}&daily=weather_code,'
+      'temperature_2m_max,temperature_2m_min,wind_speed_10m_max&hourly=temperature_2m,'
+      'weather_code,wind_speed_10m&current=temperature_2m,wind_speed_10m,weather_code'
+      '&timezone=auto'
+      );
+      try {
+        final response = await http.get(url);
+        if (response.statusCode == 200) {
+          print("getweather code 200");
+          final data = json.decode(response.body);
+            setState(() {
+              _weather = data;
+              _error = "";
+            });
+          }
+        } catch(e) {
+        print("error throw during getweather");
+        setState(() {
+          _weather = null;
+          _error = e.toString();
+        });
+      }
+    }
+}
 
   @override
   void initState() {
@@ -132,15 +204,19 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 					backgroundColor: Theme.of(context).colorScheme.inversePrimary,
 					title: Row(
 						children: [
-							IconButton(onPressed: () {_handleLocation();}, icon: Icon(Icons.location_on)),
+							IconButton(
+                onPressed: () {_handleLocation();},
+                icon: Icon(Icons.location_on)
+                ),
 							Expanded(
 								child: CitySearchField(
-                  onCitySelected: (locationData, error) {
+                  onCitySelected: (locationData, error) async {
                     setState(() {
                       _locationData = locationData;
                       _error = error;
                       _otherCity = true;
                     });
+                    await _getWeather();
                   },
 									),
 								)
@@ -148,20 +224,20 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 					)
 					),
 				body: TabBarView(children: [
-					WeatherPage(
-            title: "Currently",
+					CurrentPage(
             locationData: _locationData,
             error: _error,
+            weather : _weather,
             ),
-          WeatherPage(
-            title: "Today",
+          TodayPage(
             locationData: _locationData,
             error: _error,
+            weather : _weather,
             ),
-          WeatherPage(
-            title: "Weekly",
+          WeeklyPage(
             locationData: _locationData,
             error: _error,
+            weather : _weather,
             ),
 				],),
 				bottomNavigationBar: const TabBar(
@@ -175,27 +251,168 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   }
 }
 
-class WeatherPage extends StatelessWidget {
-  const WeatherPage({
+class CurrentPage extends StatelessWidget {
+  const CurrentPage({
     super.key,
     required Map<String, dynamic>? locationData,
     required String error,
-    required String title,
-  }) : _locationData = locationData, _error = error, _title = title;
+    required Map<String, dynamic>? weather,
+  }) : _locationData = locationData, _error = error, _weather = weather;
 
   final Map<String, dynamic>? _locationData;
+  final Map<String, dynamic>? _weather;
   final String _error;
-  final String _title;
 
   @override
   Widget build(BuildContext context) {
+    String temperature = "";
+    String weatherDescription = "";
+    String windSpeed = "";
+    if (_weather != null) {
+      temperature = _weather!['current']['temperature_2m'].toString();
+      weatherDescription = getWeatherDescription(_weather!['current']['weather_code']);
+      windSpeed = _weather!['current']['wind_speed_10m'].toString();
+    }
     return Center(
     	child: Column(
 			mainAxisAlignment: MainAxisAlignment.center,
 			crossAxisAlignment: CrossAxisAlignment.center,
     		children: [
-    			Text(_title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
+    			Text("Currently", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
   			  Text(_locationData != null ? "${_locationData!['name']}, latitude : ${_locationData!['lat'].toStringAsFixed(2)} et longitude : ${_locationData!['lat'].toStringAsFixed(2)}" : _error.isEmpty ? "" : "erreur : $_error",
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
+          Text(_weather == null ? "no weather" : "weather_code : $weatherDescription,\n"
+          "temperature : $temperature,\n"
+          "wind : $windSpeed",
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
+    		]
+    	)
+    );
+  }
+}
+
+class TodayPage extends StatelessWidget {
+  const TodayPage({
+    super.key,
+    required Map<String, dynamic>? locationData,
+    required String error,
+    required Map<String, dynamic>? weather,
+  }) : _locationData = locationData, _error = error, _weather = weather;
+
+  final Map<String, dynamic>? _locationData;
+  final Map<String, dynamic>? _weather;
+  final String _error;
+
+  @override
+  Widget build(BuildContext context) {
+  dynamic hourly;
+  List<dynamic> times = [];
+  List<dynamic> temps = [];
+  List<dynamic> codes = [];
+  int count = 0;
+
+  if (_weather != null && _weather!['hourly'] != null) {
+    hourly = _weather!['hourly'];
+    times = List<dynamic>.from(hourly['time']);
+    temps = List<dynamic>.from(hourly['temperature_2m']);
+    codes = List<dynamic>.from(hourly['weather_code']);
+
+    count = times.length > 24 ? 24 : times.length; // max 24 heures
+  }
+
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          "Today",
+          style: TextStyle(
+              fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),
+        ),
+        Text(
+          _locationData != null
+              ? "${_locationData!['name']}, latitude : ${_locationData!['lat'].toStringAsFixed(2)} et longitude : ${_locationData!['lon'].toStringAsFixed(2)}"
+              : _error.isEmpty
+                  ? ""
+                  : "erreur : $_error",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 24,
+              color: Colors.lightBlueAccent),
+        ),
+        SizedBox(height: 16),
+        if (_weather != null && _weather!['hourly'] != null)
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: count,
+              itemBuilder: (context, index) {
+                DateTime dt = DateTime.parse(times[index]);
+                String formattedTime =
+                    "${dt.day.toString().padLeft(2, '0')}/"
+                    "${dt.month.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}h";
+                num temp = temps[index]; // num pour accepter int ou double
+                int code = codes[index];
+                String description = getWeatherDescription(code);
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Text(
+                    "$formattedTime : $temp°C - $description",
+                    style: TextStyle(fontSize: 18),
+                  ),
+                );
+              },
+            ),
+          )
+        else
+          Text(
+            "no weather",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+                color: Colors.lightBlueAccent),
+          ),
+      ],
+    ),
+  );
+}
+}
+
+class WeeklyPage extends StatelessWidget {
+  const WeeklyPage({
+    super.key,
+    required Map<String, dynamic>? locationData,
+    required String error,
+    required Map<String, dynamic>? weather,
+  }) : _locationData = locationData, _error = error, _weather = weather;
+
+  final Map<String, dynamic>? _locationData;
+  final Map<String, dynamic>? _weather;
+  final String _error;
+
+  @override
+  Widget build(BuildContext context) {
+    // if (_weather =! null) {
+    //   dynamic temperature = _weather!['temperatur_2m'];
+    //   dynamic weather_code = _weather!['weather_code'];
+    //   dynamic wind_speed = _weather!['wind_speed_10m'];
+    // }
+    return Center(
+    	child: Column(
+			mainAxisAlignment: MainAxisAlignment.center,
+			crossAxisAlignment: CrossAxisAlignment.center,
+    		children: [
+    			Text("Weekly", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
+  			  Text(_locationData != null ? "${_locationData!['name']}, latitude : ${_locationData!['lat'].toStringAsFixed(2)} et longitude : ${_locationData!['lat'].toStringAsFixed(2)}" : _error.isEmpty ? "" : "erreur : $_error",
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
+          Text(_weather == null ? "no weather" : "weather",
           textAlign: TextAlign.center,
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
     		]
