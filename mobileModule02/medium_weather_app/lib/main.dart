@@ -5,39 +5,74 @@ import 'package:http/http.dart' as http;//pour faire des requete http
 import 'dart:async';//pour utiliser debounce (qui permet d'attendre un délai avant une action)
 import 'dart:convert';//pour décoder le JSON de la réponse http
 
-  final Map<int, String> weatherCodeMap = {
-  0: "Ciel clair",
-  1: "Principalement clair",
-  2: "Partiellement nuageux",
-  3: "Couvert",
-  45: "Brouillard",
-  48: "Brouillard givrant",
-  51: "Pluie fine",
-  53: "Pluie modérée",
-  55: "Pluie forte",
-  56: "Pluie verglaçante légère",
-  57: "Pluie verglaçante forte",
-  61: "Pluie faible",
-  63: "Pluie modérée",
-  65: "Pluie forte",
-  66: "Pluie verglaçante faible",
-  67: "Pluie verglaçante forte",
-  71: "Neige faible",
-  73: "Neige modérée",
-  75: "Neige forte",
-  77: "Grains de neige",
-  80: "Averse de pluie faible",
-  81: "Averse de pluie modérée",
-  82: "Averse de pluie forte",
-  85: "Averse de neige faible",
-  86: "Averse de neige forte",
-  95: "Orage",
-  96: "Orage avec pluie faible",
-  99: "Orage avec pluie forte"
+//afficher les bons messages d'erreur (la localité n'existe pas)
+//récupération des données failed (API localité ou weather)
+
+final Map<int, String> weatherCodeMap = {
+  0: "Clear sky",
+  1: "Mainly clear",
+  2: "Partly cloudy",
+  3: "Overcast",
+  45: "Fog",
+  48: "Depositing rime fog",
+  51: "Light drizzle",
+  53: "Moderate drizzle",
+  55: "Dense drizzle",
+  56: "Light freezing drizzle",
+  57: "Dense freezing drizzle",
+  61: "Slight rain",
+  63: "Moderate rain",
+  65: "Heavy rain",
+  66: "Light freezing rain",
+  67: "Heavy freezing rain",
+  71: "Slight snow fall",
+  73: "Moderate snow fall",
+  75: "Heavy snow fall",
+  77: "Snow grains",
+  80: "Slight rain showers",
+  81: "Moderate rain showers",
+  82: "Violent rain showers",
+  85: "Slight snow showers",
+  86: "Heavy snow showers",
+  95: "Thunderstorm",
+  96: "Thunderstorm with slight hail",
+  99: "Thunderstorm with heavy hail"
 };
 
+
+//   final Map<int, String> weatherCodeMap = {
+//   0: "Ciel clair",
+//   1: "Principalement clair",
+//   2: "Partiellement nuageux",
+//   3: "Couvert",
+//   45: "Brouillard",
+//   48: "Brouillard givrant",
+//   51: "Pluie fine",
+//   53: "Pluie modérée",
+//   55: "Pluie forte",
+//   56: "Pluie verglaçante légère",
+//   57: "Pluie verglaçante forte",
+//   61: "Pluie faible",
+//   63: "Pluie modérée",
+//   65: "Pluie forte",
+//   66: "Pluie verglaçante faible",
+//   67: "Pluie verglaçante forte",
+//   71: "Neige faible",
+//   73: "Neige modérée",
+//   75: "Neige forte",
+//   77: "Grains de neige",
+//   80: "Averse de pluie faible",
+//   81: "Averse de pluie modérée",
+//   82: "Averse de pluie forte",
+//   85: "Averse de neige faible",
+//   86: "Averse de neige forte",
+//   95: "Orage",
+//   96: "Orage avec pluie faible",
+//   99: "Orage avec pluie forte"
+// };
+
 String getWeatherDescription(int code) {
-  return weatherCodeMap[code] ?? "Code inconnu";
+  return weatherCodeMap[code] ?? "Weather code aknown";
 }
 
 void main() {
@@ -88,7 +123,9 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 	      setState(() {
           _otherCity = false;
           _locationData = null;
-	        _error = "permission d'accés GPS refusée, veuillez renseigner une localité";
+		  if (_error.isEmpty) {
+			_error = "Location permission denied, please enter a locality";
+		  }
 	        return;
 	      });
 	    }
@@ -97,8 +134,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 	    setState(() {
         _otherCity = false;
         _locationData = null;
-	      _error = "permission d'accés GPS refusée, veuillez renseigner une localité";
-	      return;
+		if (_error.isEmpty) {
+			_error = "Location permission denied, please enter a locality";
+		}
+	    return;
 	    });
 	  }
 	}
@@ -117,7 +156,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
         if (locationData != null) {
 	        setState(() {
       	    _otherCity = false;
-	  	      _error = '';
+	  	    _error = '';
             _locationData = locationData;
 	          return;
           });
@@ -125,7 +164,9 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
         } else {
           setState(() {
             _otherCity = false;
-            _error = "pas de localité trouvée pour cette position";
+			if (_error.isEmpty) {
+				_error = "could not find any result for the supplied address or coordinates";
+			}
             _locationData = null;
           });
         }
@@ -141,10 +182,11 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 
   Future<void> _getWeather() async {
     if (_locationData == null) {
-      print("locationdata null pour getweather");
       setState(() {
         _weather = null;
-        _error = "no data to get weather";
+		if (_error.isEmpty) {
+			_error = "no coordinate, could not get weather";
+		}
       });
     } else {
       final url = Uri.parse(
@@ -157,15 +199,20 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
       try {
         final response = await http.get(url);
         if (response.statusCode == 200) {
-          print("getweather code 200");
           final data = json.decode(response.body);
             setState(() {
               _weather = data;
               _error = "";
             });
-          }
+          } else {
+			setState(() {
+			  _weather = null;
+			  if (_error.isEmpty) {
+				_error = "the service connection is lost, please check your internet connection or try again later";
+			  }
+			});
+		  }
         } catch(e) {
-        print("error throw during getweather");
         setState(() {
           _weather = null;
           _error = e.toString();
@@ -205,40 +252,41 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 					title: Row(
 						children: [
 							IconButton(
-                onPressed: () {_handleLocation();},
-                icon: Icon(Icons.location_on)
-                ),
+                				onPressed: () {_handleLocation();},
+                				icon: Icon(Icons.location_on)
+                				),
 							Expanded(
 								child: CitySearchField(
-                  onCitySelected: (locationData, error) async {
-                    setState(() {
-                      _locationData = locationData;
-                      _error = error;
-                      _otherCity = true;
-                    });
-                    await _getWeather();
-                  },
-									),
-								)
+                  					onCitySelected: (locationData, error) async {
+                    					setState(() {
+                      						_locationData = locationData;
+                      						_error = error;
+                      						_otherCity = true;
+                    					});
+                    					await _getWeather();
+                  					},
+								),
+							)
 						],
 					)
 					),
-				body: TabBarView(children: [
-					CurrentPage(
-            locationData: _locationData,
-            error: _error,
-            weather : _weather,
-            ),
-          TodayPage(
-            locationData: _locationData,
-            error: _error,
-            weather : _weather,
-            ),
-          WeeklyPage(
-            locationData: _locationData,
-            error: _error,
-            weather : _weather,
-            ),
+				body: TabBarView(
+					children: [
+						CurrentPage(
+							locationData: _locationData,
+							error: _error,
+							weather : _weather,
+							),
+						TodayPage(
+							locationData: _locationData,
+							error: _error,
+							weather : _weather,
+							),
+						WeeklyPage(
+							locationData: _locationData,
+							error: _error,
+							weather : _weather,
+							),
 				],),
 				bottomNavigationBar: const TabBar(
 					tabs: MyHomePage._tabList,
@@ -279,10 +327,10 @@ class CurrentPage extends StatelessWidget {
 			crossAxisAlignment: CrossAxisAlignment.center,
     		children: [
     			Text("Currently", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
-  			  Text(_locationData != null ? "${_locationData!['name']}\n${_locationData!['admin']}\n${_locationData!['country']}" : _error.isEmpty ? "" : "erreur : $_error",
+  			  Text(_locationData != null ? "${_locationData!['name']}\n${_locationData!['admin']}\n${_locationData!['country']}" : _error.isEmpty ? "" : "error : $_error",
           textAlign: TextAlign.center,
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
-          Text(_weather == null ? "no weather" : "weather : $weatherDescription\n"
+          Text(_weather == null ? "no weather data" : "weather : $weatherDescription\n"
           "temperature : $temperature°C\n"
           "wind : $windSpeed km/h",
           textAlign: TextAlign.center,
@@ -344,7 +392,7 @@ class TodayPage extends StatelessWidget {
               ? "${_locationData!['name']}\n${_locationData!['admin']}\n${_locationData!['country']}"
               : _error.isEmpty
                   ? ""
-                  : "erreur : $_error",
+                  : "error : $_error",
           textAlign: TextAlign.center,
           style: TextStyle(
               fontWeight: FontWeight.bold,
@@ -445,7 +493,7 @@ class WeeklyPage extends StatelessWidget {
               ? "${_locationData!['name']}\n${_locationData!['admin']}\n${_locationData!['country']}"
               : _error.isEmpty
                   ? ""
-                  : "erreur : $_error",
+                  : "error : $_error",
           textAlign: TextAlign.center,
           style: TextStyle(
               fontWeight: FontWeight.bold,
@@ -508,6 +556,7 @@ class _CitySearchFieldState extends State<CitySearchField> {
   final TextEditingController _controller = TextEditingController();
   final LayerLink _layerLink = LayerLink();//lien entre le textField et l'objet overlay (overLayEntry)
   final FocusNode _focusNode = FocusNode();
+  String _error = '';
 
   List<Map<String, dynamic>> _suggestions = [];
   bool _isloading = false;
@@ -528,17 +577,28 @@ class _CitySearchFieldState extends State<CitySearchField> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final results = data['results'] as List<dynamic>?;
-        _suggestions = results != null
-          ? results.map((r) => {
-            'name' : r['name'],
-            'country' : r['country'],
-            'lat' : r['latitude'],
-            'lon' : r['longitude'],
-            'admin' : r['admin1'],
-          }).toList()
-          : [];
+		if (results != null) {
+			setState(() {
+				_suggestions = results.map((r) => {
+					'name' : r['name'],
+					'country' : r['country'],
+					'lat' : r['latitude'],
+					'lon' : r['longitude'],
+					'admin' : r['admin1'],
+					}).toList();
+				});
+		} else {
+			setState(() {
+				_suggestions = [];
+			});
+		}
         _showOverLay();//crée l'overlay
-      }
+      } else {
+		setState(() {
+		  _error = "service connection failed to find locality for $query";
+		});
+
+	  }
     } catch(e) {
       _removeOverlay();
     } finally {//dans tous les cas, _isloading est false à la fin
@@ -658,7 +718,7 @@ class _CitySearchFieldState extends State<CitySearchField> {
                   final s = _suggestions.first;
                   _handleSelection(s, "");
                 } else {
-                  _handleSelection(null, "aucune localité trouvée pour '$value'");
+                  _handleSelection(null, "no locality found for '$value'");
                 }
               });
             }
@@ -666,7 +726,7 @@ class _CitySearchFieldState extends State<CitySearchField> {
         },
         onChanged: _onChanged,
         decoration: InputDecoration(
-          hintText: "Entrez une localité...",
+          hintText: "Enter a locality...",
           prefixIcon: const Icon(Icons.search),
           suffixIcon: _isloading
             ? const Padding(
