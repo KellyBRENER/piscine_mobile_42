@@ -594,12 +594,14 @@ class _CitySearchFieldState extends State<CitySearchField> {
 		}
         _showOverLay();//crée l'overlay
       } else {
-		setState(() {
-		  _error = "service connection failed to find locality for $query";
+		    setState(() {
+		      _error = "service connection failed to find locality for $query";
 		});
-
 	  }
     } catch(e) {
+      setState(() {
+        _error = e.toString();
+      });
       _removeOverlay();
     } finally {//dans tous les cas, _isloading est false à la fin
       setState(() => _isloading = false);
@@ -689,7 +691,7 @@ class _CitySearchFieldState extends State<CitySearchField> {
 
     _focusNode.addListener(() {
       if (!_focusNode.hasFocus) {
-        setState(() {
+        setState(() {//peut-etre conserver _suggestion
           _suggestions = [];
         });
         _removeOverlay();
