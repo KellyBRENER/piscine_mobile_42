@@ -279,12 +279,12 @@ class CurrentPage extends StatelessWidget {
 			crossAxisAlignment: CrossAxisAlignment.center,
     		children: [
     			Text("Currently", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
-  			  Text(_locationData != null ? "${_locationData!['name']}, latitude : ${_locationData!['lat'].toStringAsFixed(2)} et longitude : ${_locationData!['lat'].toStringAsFixed(2)}" : _error.isEmpty ? "" : "erreur : $_error",
+  			  Text(_locationData != null ? "${_locationData!['name']}\n${_locationData!['admin']}\n${_locationData!['country']}" : _error.isEmpty ? "" : "erreur : $_error",
           textAlign: TextAlign.center,
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
-          Text(_weather == null ? "no weather" : "weather_code : $weatherDescription,\n"
-          "temperature : $temperature,\n"
-          "wind : $windSpeed",
+          Text(_weather == null ? "no weather" : "weather : $weatherDescription\n"
+          "temperature : $temperature°C\n"
+          "wind : $windSpeed km/h",
           textAlign: TextAlign.center,
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
     		]
@@ -310,14 +310,21 @@ class TodayPage extends StatelessWidget {
   dynamic hourly;
   List<dynamic> times = [];
   List<dynamic> temps = [];
+  List<dynamic> winds = [];
   List<dynamic> codes = [];
+  String dateOfTheDay = "";
   int count = 0;
 
   if (_weather != null && _weather!['hourly'] != null) {
     hourly = _weather!['hourly'];
     times = List<dynamic>.from(hourly['time']);
     temps = List<dynamic>.from(hourly['temperature_2m']);
+	winds = List<dynamic>.from(hourly['wind_speed_10m']);
     codes = List<dynamic>.from(hourly['weather_code']);
+	DateTime dt = DateTime.parse(times[0]);
+	dateOfTheDay = "${dt.day.toString().padLeft(2, '0')}/"
+		"${dt.month.toString().padLeft(2, '0')}/"
+		"${dt.year.toString().padLeft(2, '0')}";
 
     count = times.length > 24 ? 24 : times.length; // max 24 heures
   }
@@ -334,7 +341,7 @@ class TodayPage extends StatelessWidget {
         ),
         Text(
           _locationData != null
-              ? "${_locationData!['name']}, latitude : ${_locationData!['lat'].toStringAsFixed(2)} et longitude : ${_locationData!['lon'].toStringAsFixed(2)}"
+              ? "${_locationData!['name']}\n${_locationData!['admin']}\n${_locationData!['country']}"
               : _error.isEmpty
                   ? ""
                   : "erreur : $_error",
@@ -346,6 +353,14 @@ class TodayPage extends StatelessWidget {
         ),
         SizedBox(height: 16),
         if (_weather != null && _weather!['hourly'] != null)
+		  Text(dateOfTheDay,
+				textAlign: TextAlign.center,
+				style: TextStyle(
+					fontWeight: FontWeight.bold,
+					fontSize: 24,
+					color: Colors.lightBlueAccent),
+			),
+        if (_weather != null && _weather!['hourly'] != null)
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -353,18 +368,18 @@ class TodayPage extends StatelessWidget {
               itemBuilder: (context, index) {
                 DateTime dt = DateTime.parse(times[index]);
                 String formattedTime =
-                    "${dt.day.toString().padLeft(2, '0')}/"
-                    "${dt.month.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}h";
+                    "${dt.hour.toString().padLeft(2, '0')}h";
                 num temp = temps[index]; // num pour accepter int ou double
+				num wind = winds[index];
                 int code = codes[index];
                 String description = getWeatherDescription(code);
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
                   child: Text(
-                    "$formattedTime : $temp°C - $description",
+                    "$formattedTime : $temp°C - $wind km/h - $description",
                     style: TextStyle(fontSize: 18),
-                  ),
+                  	),
                 );
               },
             ),
@@ -398,27 +413,85 @@ class WeeklyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // if (_weather =! null) {
-    //   dynamic temperature = _weather!['temperatur_2m'];
-    //   dynamic weather_code = _weather!['weather_code'];
-    //   dynamic wind_speed = _weather!['wind_speed_10m'];
-    // }
-    return Center(
-    	child: Column(
-			mainAxisAlignment: MainAxisAlignment.center,
-			crossAxisAlignment: CrossAxisAlignment.center,
-    		children: [
-    			Text("Weekly", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),),
-  			  Text(_locationData != null ? "${_locationData!['name']}, latitude : ${_locationData!['lat'].toStringAsFixed(2)} et longitude : ${_locationData!['lat'].toStringAsFixed(2)}" : _error.isEmpty ? "" : "erreur : $_error",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
-          Text(_weather == null ? "no weather" : "weather",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.lightBlueAccent),),
-    		]
-    	)
-    );
+  dynamic weekly;
+  List<dynamic> times = [];
+  List<dynamic> tempsMin = [];
+  List<dynamic> tempsMax = [];
+  List<dynamic> codes = [];
+  int count = 0;
+
+  if (_weather != null && _weather!['daily'] != null) {
+    weekly = _weather!['daily'];
+    times = List<dynamic>.from(weekly['time']);
+    tempsMin = List<dynamic>.from(weekly['temperature_2m_min']);
+    tempsMax = List<dynamic>.from(weekly['temperature_2m_max']);
+    codes = List<dynamic>.from(weekly['weather_code']);
+
+    count = times.length > 7 ? 7 : times.length; // max 24 heures
   }
+
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          "Weekly",
+          style: TextStyle(
+              fontWeight: FontWeight.bold, fontSize: 36, color: Colors.black),
+        ),
+        Text(
+          _locationData != null
+              ? "${_locationData!['name']}\n${_locationData!['admin']}\n${_locationData!['country']}"
+              : _error.isEmpty
+                  ? ""
+                  : "erreur : $_error",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 24,
+              color: Colors.lightBlueAccent),
+        ),
+        SizedBox(height: 16),
+        if (_weather != null && _weather!['daily'] != null)
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: count,
+              itemBuilder: (context, index) {
+                DateTime dt = DateTime.parse(times[index]);
+                String formattedTime =
+                    "${dt.day.toString().padLeft(2, '0')}/"
+                    "${dt.month.toString().padLeft(2, '0')}/"
+					"${dt.year.toString().padLeft(2, '0')}";
+                num tempMin = tempsMin[index];
+				num tempMax = tempsMax[index];
+                int code = codes[index];
+                String description = getWeatherDescription(code);
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Text(
+                    "$formattedTime : $tempMin°C to $tempMax°C - $description",
+                    style: TextStyle(fontSize: 18),
+                  ),
+                );
+              },
+            ),
+          )
+        else
+          Text(
+            "no weather",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+                color: Colors.lightBlueAccent),
+          ),
+      ],
+    ),
+  );
+}
 }
 
 class CitySearchField extends StatefulWidget {
