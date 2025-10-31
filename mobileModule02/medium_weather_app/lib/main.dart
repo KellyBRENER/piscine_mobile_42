@@ -595,12 +595,12 @@ class _CitySearchFieldState extends State<CitySearchField> {
         _showOverLay();//crée l'overlay
       } else {
 		    setState(() {
-		      _error = "service connection failed to find locality for $query";
+        _error = "the service connection is lost, please check your internet connection or try again later";
 		});
 	  }
     } catch(e) {
       setState(() {
-        _error = e.toString();
+        _error = "the service connection is lost, please check your internet connection or try again later";
       });
       _removeOverlay();
     } finally {//dans tous les cas, _isloading est false à la fin
@@ -720,7 +720,7 @@ class _CitySearchFieldState extends State<CitySearchField> {
                   final s = _suggestions.first;
                   _handleSelection(s, "");
                 } else {
-                  _handleSelection(null, "no locality found for '$value'");
+                  _handleSelection(null, _error);
                 }
               });
             }
