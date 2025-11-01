@@ -357,7 +357,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                   error: _error,
                   title: "Today",
                   weather: _weather,
-                  weatherWidget: Expanded(child : TodayWidget(weather : _weather, theme : theme),),
+                  weatherWidget: TodayWidget(weather : _weather, theme : theme),
                 ),
                 WeeklyPage(
                   locationData: _locationData,
@@ -403,53 +403,42 @@ class CenterBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        double maxCardHeight = constraints.maxHeight * 0.8;
-      return Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: maxCardHeight,
-            ),
-            child: Card(
+    return Center(
+          child: Card(
               color: theme.cardColor.withAlpha(230),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(_title, style: theme.textTheme.titleLarge),
-                    const SizedBox(height: 20),
-                    Text(
-                      _locationData != null
-                          ? "${_locationData!['name']}\n${_locationData!['admin']}\n${_locationData!['country']}"
-                          : _error.isEmpty
-                          ? ""
-                          : "error : $_error",
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 20),
-                    if (_weather == null)
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(_title, style: theme.textTheme.titleLarge),
+                      const SizedBox(height: 20),
                       Text(
-                        "no weather data",
+                        _locationData != null
+                            ? "${_locationData!['name']}\n${_locationData!['admin']}\n${_locationData!['country']}"
+                            : _error.isEmpty
+                            ? ""
+                            : "error : $_error",
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyMedium,
-                      )
-                    else
-                      _weatherWidget,
-                  ],
+                      ),
+                      const SizedBox(height: 20),
+                      if (_weather == null)
+                        Text(
+                          "no weather data",
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium,
+                        )
+                      else
+                        _weatherWidget,
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-        );
-      },
     );
   }
 }
@@ -524,7 +513,7 @@ class TodayWidget extends StatelessWidget {
     }
 
     return Column(
-      mainAxisSize: MainAxisSize.max,
+      mainAxisSize: MainAxisSize.min,
       children: [
         if (_weather != null && _weather!['hourly'] != null) ...[
           Text(
@@ -532,28 +521,26 @@ class TodayWidget extends StatelessWidget {
             textAlign: TextAlign.center,
             style: _theme.textTheme.bodyMedium,
             ),
-          Expanded(
+          SizedBox(
+            height: 400,
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              shrinkWrap: true,
-              itemCount: count,
-              itemBuilder: (context, index) {
-                DateTime dt = DateTime.parse(times[index]);
-                String formattedTime =
-                  "${dt.hour.toString().padLeft(2, '0')}h";
-                  num temp = temps[index]; // num pour accepter int ou double
-                  num wind = winds[index];
-                  int code = codes[index];
-                  String description = getWeatherDescription(code);
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: Text(
-                        "$formattedTime : $temp°C - $wind km/h - $description",
-                        style: _theme.textTheme.bodyMedium,
-                        ),
-                      );
-                    },//itembuilder
-                  ),
+                padding: const EdgeInsets.all(16),
+                shrinkWrap: true,
+                itemCount: count,
+                itemBuilder: (context, index) {
+                  DateTime dt = DateTime.parse(times[index]);
+                  String formattedTime =
+                    "${dt.hour.toString().padLeft(2, '0')}h";
+                    num temp = temps[index]; // num pour accepter int ou double
+                    num wind = winds[index];
+                    int code = codes[index];
+                    String description = getWeatherDescription(code);
+                    return Text(
+                          "$formattedTime : $temp°C - $wind km/h - $description",
+                          style: _theme.textTheme.bodyMedium,
+                        );
+                      },//itembuilder
+                    ),
           ),
               ] else
                 Container(
