@@ -11,43 +11,45 @@ Future<Position?> determinePosition() async {
 
   serviceEnabled = await Geolocator.isLocationServiceEnabled();
   if (!serviceEnabled) {
-    return Future.error("GPS désactivé");
+    throw Exception("GPS désactivé");
+    //return Future.error("GPS désactivé");
   }
   permission = await Geolocator.checkPermission();
   if (permission == LocationPermission.denied) {
     permission = await Geolocator.requestPermission();
     if (permission == LocationPermission.denied) {
-      return Future.error("l'accés à la géolocalisation a été refusée");
+      throw Exception("l'accés à la géolocalisation a été refusée");
+      // return Future.error("l'accés à la géolocalisation a été refusée");
     }
   }
 
   if (permission == LocationPermission.deniedForever) {
-    return Future.error("l'accés à la géolocalisation a été définitivement refusé. Pour l'activer, allez dans les paramètres de l'application");
+    throw Exception("l'accés à la géolocalisation a été définitivement refusé. Pour l'activer, allez dans les paramètres de l'application");
+    // return Future.error("l'accés à la géolocalisation a été définitivement refusé. Pour l'activer, allez dans les paramètres de l'application");
   }
 
   return await Geolocator.getCurrentPosition();
 }
 
+//détermine la localité à partir des coordonnées, toujours la placer dans un try/catch
 Future<Map<String, dynamic>?> getCityFromPosition(Position? position) async {
   if (position == null) {
-        return null;
+    throw Exception("aucune position n'a été trouvée, la ville correspondante ne peut être trouvée");
+        // return null;
   }
-  try {
-    List<Placemark> placemarks = await placemarkFromCoordinates(
-      position.latitude,
-      position.longitude,
+  List<Placemark> placemarks = await placemarkFromCoordinates(
+    position.latitude,
+    position.longitude,
     );
-    if (placemarks.isNotEmpty) {
-      Placemark place = placemarks.first;
-      return {'name' : place.locality ?? place.subAdministrativeArea ?? 'ville inconnue',
-      'admin' : place.administrativeArea ?? 'région inconnue',
-      'country' : place.country ?? 'pays inconnu',
-      'lat' : position.latitude, 'lon' : position.longitude
-      };
-    } else {return null;}
-  } catch(e) {
-    print("erreur de geocodage : $e");
-    return null;
+  if (placemarks.isNotEmpty) {
+    Placemark place = placemarks.first;
+    return {'name' : place.locality ?? place.subAdministrativeArea ?? 'ville inconnue',
+    'admin' : place.administrativeArea ?? 'région inconnue',
+    'country' : place.country ?? 'pays inconnu',
+    'lat' : position.latitude, 'lon' : position.longitude
+    };
+  } else {
+    throw Exception("aucune localité n'a été trouvée pour cette position");
   }
 }
 

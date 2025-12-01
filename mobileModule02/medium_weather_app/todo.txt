@@ -1,0 +1,2 @@
+ - rendre l'appli responsive
+ - voir pour mieux gérer les messages d'erreur
