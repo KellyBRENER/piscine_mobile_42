@@ -230,7 +230,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with WidgetsBindingObse
   }
 
   @override
-  void didChangeAppLifeCycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && _otherCity == false) {
       _handleLocation();
     }
@@ -267,15 +267,16 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with WidgetsBindingObse
 				body: TabBarView(
 					children: [
             CenterBox(
-              theme: theme,
+              /*theme: theme,*/
               locationData: _locationData,
               title: "Currently",
-              weatherWidget : CurrentWidget(weather: _weather, theme: theme),
+              weatherWidget : CurrentWidget(weather: _weather/*, theme: theme*/),
             ),
-            CenterBox(theme: theme,
+            CenterBox(
+			  /*theme: theme,*/
               locationData: _locationData,
               title: "Today",
-              weatherWidget: TodayWidget(weather : _weather, theme : theme),
+              weatherWidget: TodayWidget(weather : _weather/*, theme : theme*/),
             ),
             WeeklyPage(
               locationData: _locationData,
@@ -306,10 +307,10 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with WidgetsBindingObse
   }
 }
 
-class CenterBox extends StatelessWidget {
+class CenterBox extends ConsumerWidget {
   const CenterBox({
     super.key,
-    required this.theme,
+    //required this.theme,
     required Map<String, dynamic>? locationData,
     required String title,
     required Widget weatherWidget,
@@ -317,16 +318,17 @@ class CenterBox extends StatelessWidget {
   _locationData = locationData,
   _weatherWidget = weatherWidget;
 
-  final ThemeData theme;
+  //final ThemeData theme;
   final String _title;
   final Map<String, dynamic>? _locationData;
   final Widget _weatherWidget;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+	final error = ref.watch(errorProvider);
     return Center(
           child: Card(
-              color: theme.cardColor.withAlpha(230),
+              //color: theme.cardColor.withAlpha(230),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: SingleChildScrollView(
@@ -335,7 +337,7 @@ class CenterBox extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(_title, style: theme.textTheme.titleLarge),
+                      Text(_title/*, style: theme.textTheme.titleLarge*/),
                       const SizedBox(height: 20),
                       Text(
                         _locationData != null
@@ -344,7 +346,7 @@ class CenterBox extends StatelessWidget {
                             ? ""
                             : "error : $error",
                         textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium,
+                        // style: theme.textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 20),
                         _weatherWidget,
@@ -360,11 +362,11 @@ class CenterBox extends StatelessWidget {
 class CurrentWidget extends StatelessWidget {
   const CurrentWidget({super.key,
     required Map<String, dynamic>? weather,
-    required ThemeData theme}) :
-    _weather = weather, _theme = theme;
+    /*required ThemeData theme*/}) :
+    _weather = weather/*, _theme = theme*/;
 
   final Map<String, dynamic>? _weather;
-  final ThemeData _theme;
+//   final ThemeData _theme;
 
   @override
   Widget build(BuildContext context) {
@@ -372,20 +374,23 @@ class CurrentWidget extends StatelessWidget {
     int weatherCode = 0;
     String weatherDescription = "";
     String windSpeed = "";
-    IconData weatherIcon = FontAwesomeIcons.circleQuestion;
-    if (_weather != null) {
+    // IconData weatherIcon = FontAwesomeIcons.circleQuestion;
+    if (_weather == null) {
+		return Text("no weather data");
+	}
+	else {
       temperature = _weather!['current']['temperature_2m'].toString();
       weatherCode = _weather!['current']['weather_code'];
       weatherDescription = getWeatherDescription(weatherCode);
-      weatherIcon = getWeatherIcon(weatherCode);
+    //   weatherIcon = getWeatherIcon(weatherCode);
       windSpeed = _weather!['current']['wind_speed_10m'].toString();
     }
     return Column(
       children: [
-        Icon(weatherIcon, size: 80, color: _theme.iconTheme.color),
+        // Icon(weatherIcon, size: 80, color: _theme.iconTheme.color),
         Text("$weatherDescription\n🌡️ $temperature°C\n🌬️ $windSpeed km/h",
           textAlign: TextAlign.center,
-          style: _theme.textTheme.bodyMedium,
+        //   style: _theme.textTheme.bodyMedium,
         ),
       ],
     );
@@ -394,12 +399,12 @@ class CurrentWidget extends StatelessWidget {
 
 class TodayWidget extends StatelessWidget {
   const TodayWidget({super.key,
-    required Map<String, dynamic>? weather,
-    required ThemeData theme}) :
-    _weather = weather, _theme = theme;
+    required Map<String, dynamic>? weather/*,
+    required ThemeData theme*/}) :
+    _weather = weather/*, _theme = theme*/;
 
   final Map<String, dynamic>? _weather;
-  final ThemeData _theme;
+//   final ThemeData _theme;
 
   @override
   Widget build(BuildContext context) {
@@ -411,7 +416,9 @@ class TodayWidget extends StatelessWidget {
     String dateOfTheDay = "";
     int count = 0;
 
-    if (_weather != null && _weather!['hourly'] != null) {
+    if (_weather == null || _weather!['hourly'] == null) {
+	  return Text("no weather data");
+	} else {
       hourly = _weather!['hourly'];
       times = List<dynamic>.from(hourly['time']);
       temps = List<dynamic>.from(hourly['temperature_2m']);
@@ -429,52 +436,34 @@ class TodayWidget extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (_weather != null && _weather!['hourly'] != null) ...[
-          Text(
-            dateOfTheDay,
-            textAlign: TextAlign.center,
-            style: _theme.textTheme.bodyMedium,
-            ),
-          SizedBox(
-            height: 400,
-            child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                shrinkWrap: true,
-                itemCount: count,
-                itemBuilder: (context, index) {
-                  DateTime dt = DateTime.parse(times[index]);
-                  String formattedTime =
-                    "${dt.hour.toString().padLeft(2, '0')}h";
-                    num temp = temps[index]; // num pour accepter int ou double
-                    num wind = winds[index];
-                    int code = codes[index];
-                    String description = getWeatherDescription(code);
-                    return Text(
-                          "$formattedTime : $temp°C - $wind km/h - $description",
-                          style: _theme.textTheme.bodyMedium,
-                        );
-                      },//itembuilder
-                    ),
+        Text(
+	      dateOfTheDay,
+          textAlign: TextAlign.center,
+            // style: _theme.textTheme.bodyMedium,
           ),
-              ] else
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withAlpha(200),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    "no weather",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-            ],
-          );
+        SizedBox(
+          height: 400,
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            shrinkWrap: true,
+            itemCount: count,
+            itemBuilder: (context, index) {
+              DateTime dt = DateTime.parse(times[index]);
+              String formattedTime =
+                "${dt.hour.toString().padLeft(2, '0')}h";
+              num temp = temps[index]; // num pour accepter int ou double
+              num wind = winds[index];
+              int code = codes[index];
+              String description = getWeatherDescription(code);
+              return Text(
+                "$formattedTime : $temp°C - $wind km/h - $description",
+                  //   style: _theme.textTheme.bodyMedium,
+                );
+            },//itembuilder
+          ),
+        ),
+	  ]
+    );
   }
 }
 
