@@ -1,2 +1,8 @@
  - rendre l'appli responsive
  - voir pour mieux gérer les messages d'erreur
+ - vérifier que les massages d'erreur correspondent à ce qui est
+ attendu dans le sujet
+ - rendre weekly responsive
+ - améliorer le design des pages
+
+ - remplacer "no weather data" pas aucune données météorologiques et centrer
