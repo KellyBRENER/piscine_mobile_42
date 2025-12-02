@@ -259,7 +259,13 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with WidgetsBindingObse
                       						_locationData = locationData;
                       						_otherCity = true;
                     					});
-                    					await _getWeather();
+                              if (_locationData != null) {
+                    					  await _getWeather();
+                              } else {
+                                setState(() {
+                                  _weather = null;
+                                });
+                              }
                   					},
 								),
 							)
