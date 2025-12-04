@@ -5,8 +5,8 @@ final ThemeData kawaiiLightTheme = ThemeData(
   brightness: Brightness.light,
   useMaterial3: true,
   colorScheme: ColorScheme.fromSeed(
-    seedColor: const Color(0xFFFF4FA8), // rose cerise
-    primary: const Color(0xFFFF4FA8), // rose saturé
+    seedColor: const Color.fromARGB(255, 244, 235, 239), // rose cerise
+    primary: const Color.fromARGB(255, 72, 171, 229), // rose saturé
     secondary: const Color(0xFF6AD8E4), // turquoise clair
     surface: const Color(0xFFFFFAFD), // blanc rosé
   ),
@@ -21,27 +21,39 @@ final ThemeData kawaiiLightTheme = ThemeData(
     titleLarge: TextStyle(
       fontSize: 50,
       fontWeight: FontWeight.w700,
-      color: Color(0xFF3A1C71),
+      color:  Color(0xFFFF4FA8),
     ),
     bodyMedium: TextStyle(
-      fontSize: 16,
-      color: Color(0xFF4E4E4E),
+      fontSize: 24,
+      color: Colors.white,
     ),
     labelSmall: TextStyle(
       fontSize: 14,
-      color: Color(0xFFFF7CB0),
+      color: Color.fromARGB(255, 171, 205, 204),
     ),
   ),
   appBarTheme: const AppBarTheme(
-    backgroundColor: Color(0xFFFF4FA8), // rose manga
-    foregroundColor: Colors.white,
+    backgroundColor: Color.fromARGB(45, 212, 99, 173), // rose manga
+    foregroundColor: Colors.black,
     elevation: 3,
     centerTitle: true,
+    titleTextStyle: TextStyle(
+      fontSize: 26,
+      fontWeight: FontWeight.bold,
+      color: Colors.black,
+    ),
+  ),
+  tabBarTheme : TabBarThemeData(
+    indicatorColor: Colors.white,
+    labelColor: Colors.white,
+    overlayColor: WidgetStatePropertyAll(const Color.fromARGB(255, 70, 154, 165)),
+    unselectedLabelColor: Colors.white,
   ),
   // 🚨 CORRECTION ICI : Utiliser CardTheme au lieu de CardThemeData
   cardTheme: CardThemeData(
     // elevation: 4,
-    color: const Color(0xFFFFE6F3), // rose clair
+    color:  Color.fromARGB(45, 212, 99, 173),
+    //color: const Color(0xFFFFE6F3), // rose clair
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
   ),
   iconTheme: const IconThemeData(color: Color(0xFFFF4FA8), size: 26),

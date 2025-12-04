@@ -235,8 +235,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with WidgetsBindingObse
 			      });
 		      }
         } catch(e) {
-          ref.read(errorProvider.notifier).state = "nous n'avons pas pu récupérer les données météorologiques.\n"
-          "information sur l'erreur : ${e.toString()}";
+          ref.read(errorProvider.notifier).state = "erreur de connection, vérifier votre connection internet ou réessayer plus tard";
         setState(() {
           _weather = null;
         });
@@ -273,19 +272,21 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with WidgetsBindingObse
 			child: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage("assets/images/background.jpg"),
+            image: AssetImage("assets/images/background_rainbow.jpg"),
             fit: BoxFit.cover,
             ),
         ),
         child: Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
-            backgroundColor: theme.colorScheme.inversePrimary,
+            //backgroundColor: theme.colorScheme.inversePrimary,
             title: Row(
               children: [
                 IconButton(
                   onPressed: () {_handleLocation();},
-                  icon: Icon(Icons.location_on)
+                  icon: Icon(Icons.location_on),
+				  iconSize: 42,
+				  color: Colors.white,
                 ),
                 Expanded(
                   child: CitySearchField(
@@ -337,11 +338,12 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with WidgetsBindingObse
                   ),
                 ],
               ),
-              bottomNavigationBar: const TabBar(
-                tabs: MyHomePage._tabList,
-                overlayColor: WidgetStatePropertyAll(Colors.deepPurple),
-                labelColor: Colors.deepPurpleAccent,
-              ),
+              bottomNavigationBar: Container(
+				color:  Color.fromARGB(100, 212, 99, 173),
+				child: const TabBar(
+				  tabs: MyHomePage._tabList,
+				),
+			  ),
             ),
           ),
         ),
@@ -370,7 +372,7 @@ class CenterBox extends ConsumerWidget {
 	final error = ref.watch(errorProvider);
     return Center(
       child: Card(
-        color: theme.cardColor.withAlpha(230),
+        color: theme.cardTheme.color,
         child: ListView(
           padding: const EdgeInsets.all(20.0),
 			    shrinkWrap: true,
@@ -383,12 +385,17 @@ class CenterBox extends ConsumerWidget {
             Text(
               _locationData != null
                 ? "${_locationData!['name']}\n${_locationData!['admin']}\n${_locationData!['country']}"
-                : error == null
+                : "",
+              textAlign: TextAlign.center,
+				      style: theme.textTheme.bodyMedium,
+				    ),
+			Text(
+				error == null
                 ? ""
                 : "error : $error",
               textAlign: TextAlign.center,
 				      style: theme.textTheme.bodyMedium,
-				    ),
+			),
             _weatherWidget,
           ],
         ),
@@ -600,6 +607,8 @@ class _CitySearchFieldState extends ConsumerState<CitySearchField> {
 					}).toList();
 				});
 		} else {
+			ref.read(errorProvider.notifier).state =
+          "nous n'avons pas pu trouvé de localité correspondant à $query";
 			setState(() {
 				_suggestions = [];
 			});
@@ -611,8 +620,7 @@ class _CitySearchFieldState extends ConsumerState<CitySearchField> {
       }
     } catch(e) {
         ref.read(errorProvider.notifier).state =
-          "erreur de connection, vérifier votre connection internet ou réessayer plus tard\n"
-          "message d'erreur = ${e.toString}";
+          "erreur de connection, vérifier votre connection internet ou réessayer plus tard";
       _removeOverlay();
     } finally {//dans tous les cas, _isloading est false à la fin
       setState(() => _isloading = false);
@@ -659,7 +667,7 @@ class _CitySearchFieldState extends ConsumerState<CitySearchField> {
                 itemCount: _suggestions.length,
                 separatorBuilder: (context, index) => Divider(
                   height: 1,
-                  color: Colors.grey.shade300,
+                  color: Colors.black,
                 ),
                 itemBuilder: (context, index) {
                   final s = _suggestions[index];
@@ -739,20 +747,13 @@ class _CitySearchFieldState extends ConsumerState<CitySearchField> {
           },
           onChanged: _onChanged,
           decoration: InputDecoration(
-            hintText: "Enter a locality...",
-            prefixIcon: const Icon(Icons.search),
-            suffixIcon: _isloading
-              ? const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            : null,
+            hintText: "Rentrer une localité...",
+            // prefixIcon: const Icon(Icons.search),
+			// prefixIconColor: Colors.white,
+            suffixIcon: const Icon(Icons.search, size: 42,),
+			suffixIconColor: Colors.white,
+              ),
           ),
-        ),
-      );
+        );
   }
 }
