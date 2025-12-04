@@ -158,8 +158,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with WidgetsBindingObse
           });
       }
     } catch(e) {
-      ref.read(errorProvider.notifier).state = "Permission Localisation refusée, merci d'entrer une localité"
-      "erreur = ${e.toString()}";
+      ref.read(errorProvider.notifier).state = "Permission Localisation refusée, merci d'entrer une localité";
 	    }
 	  if (_permission == LocationPermission.denied) {
       ref.read(errorProvider.notifier).state = "Permission Localisation refusée, merci d'entrer une localité";
@@ -195,8 +194,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with WidgetsBindingObse
         // }
       }
     } catch (e) {
-      ref.read(errorProvider.notifier).state = "l'accés à la localisation n'est pas possible,"
-      "merci de renseigner une localité.\ninfo : ${e.toString()}";
+      ref.read(errorProvider.notifier).state = "l'accés à la localisation n'est pas possible,";
       setState(() {
         _otherCity = false;
         _locationData = null;
@@ -578,7 +576,6 @@ class _CitySearchFieldState extends ConsumerState<CitySearchField> {
   final FocusNode _focusNode = FocusNode();
 
   List<Map<String, dynamic>> _suggestions = [];
-  bool _isloading = false;
   Timer? _debounce;//timer pour ne pas appeler l'API a chaque frappe
   OverlayEntry? _overlayEntry;//objet qui sera overLay
 
@@ -587,7 +584,6 @@ class _CitySearchFieldState extends ConsumerState<CitySearchField> {
       _removeOverlay();
       return;
     }
-    setState(() => _isloading = true);
     final url = Uri.parse(
       'https://geocoding-api.open-meteo.com/v1/search?name=$query&count=5&language=fr&format=json'
       );
@@ -622,8 +618,6 @@ class _CitySearchFieldState extends ConsumerState<CitySearchField> {
         ref.read(errorProvider.notifier).state =
           "erreur de connection, vérifier votre connection internet ou réessayer plus tard";
       _removeOverlay();
-    } finally {//dans tous les cas, _isloading est false à la fin
-      setState(() => _isloading = false);
     }
   }
 
