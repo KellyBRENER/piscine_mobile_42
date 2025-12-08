@@ -1,0 +1,4 @@
+- changer currently today et weekly en maintenant, aujourd'hui et semaine
+- placer dans current dans cet ordre : température / description meteo / icon / vent
+- sur today : afficher les variations de températures en graphique heure / température
+- sur today: afficher le détail heure par heure sur une liste horizontal scrollable 
