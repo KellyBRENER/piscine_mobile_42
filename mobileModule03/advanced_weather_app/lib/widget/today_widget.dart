@@ -67,8 +67,18 @@ class HourlyTemperatureChart extends StatelessWidget {
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            barWidth: 3,
-            dotData: FlDotData(show: false),
+            barWidth: 2,
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, barData, index) {
+                return FlDotCirclePainter(
+                  radius: 2,
+                  color: Colors.white,
+                  strokeWidth: 1,
+                );
+              },
+            ),
+            color: Color(0xFFFF4FA8),
             ),
           ],
         ),
@@ -116,12 +126,12 @@ class TodayWidget extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        /*Text(
+        Text(
 	      dateOfTheDay,
         textAlign: TextAlign.center,
 		    style: _theme.textTheme.bodyMedium,
           ),
-		    ...List.generate(count, (index) {
+		    /*...List.generate(count, (index) {
           DateTime dt = DateTime.parse(times[index]);
 			    String formattedTime =
             "${dt.hour.toString().padLeft(2, '0')}h";
@@ -142,6 +152,50 @@ class TodayWidget extends StatelessWidget {
           times: times,
           temps: temps,
         ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 200,
+          width: double.infinity,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: count,
+            itemBuilder: (context, index) {
+              final dt = DateTime.parse(times[index]);
+              final hour = "${dt.hour.toString().padLeft(2, '0')}h";
+              final temp = temps[index];
+              final wind = winds[index];
+              final code = codes[index];
+              //final description = getWeatherDescription(code);
+              final icon = Icon(getWeatherIcon(code), size: 40, color: _theme.iconTheme.color,);
+              return Container(
+                width: 150,
+                margin: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _theme.cardTheme.color,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _theme.dividerColor,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(hour, style: _theme.textTheme.bodyMedium,),
+                    const SizedBox(height: 6),
+                    icon,
+                    const SizedBox(height: 6),
+                    //Text(description, style: _theme.textTheme.bodyMedium, textAlign: TextAlign.center,),
+                    //const SizedBox(height: 6),
+                    Text("$temp°C", style: _theme.textTheme.bodyMedium,),
+                    const SizedBox(height: 6),
+                    Text("$wind km/h", style: _theme.textTheme.bodyMedium,),
+                  ],
+                ),
+              );
+            },
+          ),
+        )
 	  ],
     );
   }

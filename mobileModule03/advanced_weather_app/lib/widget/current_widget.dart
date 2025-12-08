@@ -30,11 +30,18 @@ class CurrentWidget extends StatelessWidget {
     }
     return Column(
       children: [
-        Text("🌡️ $temperature°C\n$weatherDescription",
+        Text("$temperature°C",
+          textAlign: TextAlign.center,
+          style: _theme.textTheme.titleMedium,
+        ),
+        const SizedBox(height: 16),
+        Text(weatherDescription,
           textAlign: TextAlign.center,
 		      style: _theme.textTheme.bodyMedium,
         ),
+        const SizedBox(height: 24),
         Icon(weatherIcon, size: 80, color: _theme.iconTheme.color),
+        const SizedBox(height: 24),
         Text("🌬️ $windSpeed km/h",
           textAlign: TextAlign.center,
 		      style: _theme.textTheme.bodyMedium,

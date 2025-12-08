@@ -23,6 +23,11 @@ final ThemeData kawaiiLightTheme = ThemeData(
       fontWeight: FontWeight.w700,
       color:  Color(0xFFFF4FA8),
     ),
+    titleMedium: TextStyle(
+      fontSize: 50,
+      fontWeight: FontWeight.w700,
+      color:  Colors.white
+    ),
     bodyMedium: TextStyle(
       fontSize: 24,
       color: Colors.white,
