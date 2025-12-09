@@ -18,71 +18,83 @@ class HourlyTemperatureChart extends StatelessWidget {
       return FlSpot(index.toDouble(), (temps[index] as num).toDouble());
     });
 
-    return SizedBox(
-      height: 250,
-      child: LineChart(
-        LineChartData(
-          minX: 0,
-          maxX: count.toDouble(),
-          minY: temps.sublist(0, count).reduce((a, b) => a < b ? a : b).toDouble() - 5,
-          maxY: temps.sublist(0, count).reduce((a, b) => a > b ? a : b).toDouble() + 5,
-          gridData: FlGridData(
-            show: true,
-            horizontalInterval: 2,
-            verticalInterval: 2,
-            ),
-          borderData: FlBorderData(show: true),
-          titlesData: FlTitlesData(
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true, 
-                reservedSize: 30,
-                getTitlesWidget: (value, meta) {
-                  if (value == meta.min || value == meta.max) return Text("");
-                return Text("${value.toInt()}°C", style: const TextStyle(fontSize: 10),);
-                },
-                interval: 2,
-              ),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: 2,
-                getTitlesWidget: (value, meta) {
-                  final index = value.toInt();
-                  if (index >= count) return const SizedBox();
-                  final dt = DateTime.parse(times[index]);
-                  return Text("${dt.hour}h", style: const TextStyle(fontSize: 10),);
-                },
-              ),
-            ),
-            rightTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            topTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const Text(
+          "Températures du jour",
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        lineBarsData: [
-          LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            barWidth: 2,
-            dotData: FlDotData(
+        SizedBox(
+        height: 250,
+        child: LineChart(
+          LineChartData(
+            minX: 0,
+            maxX: count.toDouble(),
+            minY: temps.sublist(0, count).reduce((a, b) => a < b ? a : b).toDouble() - 5,
+            maxY: temps.sublist(0, count).reduce((a, b) => a > b ? a : b).toDouble() + 5,
+            gridData: FlGridData(
               show: true,
-              getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(
-                  radius: 2,
-                  color: Colors.white,
-                  strokeWidth: 1,
-                );
-              },
-            ),
-            color: Color(0xFFFF4FA8),
-            ),
-          ],
+              horizontalInterval: 2,
+              verticalInterval: 2,
+              ),
+            borderData: FlBorderData(show: true),
+            titlesData: FlTitlesData(
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true, 
+                  reservedSize: 30,
+                  getTitlesWidget: (value, meta) {
+                    if (value == meta.min || value == meta.max) return Text("");
+                  return Text("${value.toInt()}°C", style: const TextStyle(fontSize: 10),);
+                  },
+                  interval: 2,
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  interval: 2,
+                  getTitlesWidget: (value, meta) {
+                    final index = value.toInt();
+                    if (index >= count) return const SizedBox();
+                    final dt = DateTime.parse(times[index]);
+                    return Text("${dt.hour}h", style: const TextStyle(fontSize: 10),);
+                  },
+                ),
+              ),
+              rightTitles: AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              topTitles: AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+          ),
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              barWidth: 2,
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (spot, percent, barData, index) {
+                  return FlDotCirclePainter(
+                    radius: 2,
+                    color: Colors.white,
+                    strokeWidth: 1,
+                  );
+                },
+              ),
+              color: Color(0xFFFF4FA8),
+              ),
+            ],
+          ),
         ),
       ),
+      ],
     );
   }
 }
@@ -131,22 +143,6 @@ class TodayWidget extends StatelessWidget {
         textAlign: TextAlign.center,
 		    style: _theme.textTheme.bodyMedium,
           ),
-		    /*...List.generate(count, (index) {
-          DateTime dt = DateTime.parse(times[index]);
-			    String formattedTime =
-            "${dt.hour.toString().padLeft(2, '0')}h";
-          num temp = temps[index]; // num pour accepter int ou double
-          num wind = winds[index];
-          int code = codes[index];
-          String description = getWeatherDescription(code);
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-				    child: Text(
-				      "$formattedTime : $temp°C - $wind km/h - $description",
-				      style: _theme.textTheme.bodyMedium,
-				    ),            
-			    );
-        }),*/
         const SizedBox(height: 16),
         HourlyTemperatureChart(
           times: times,

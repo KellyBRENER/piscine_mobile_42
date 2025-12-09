@@ -40,9 +40,9 @@ class MyHomePage extends ConsumerStatefulWidget {
   const MyHomePage({super.key});
 
 	static const List<Tab> _tabList = [
-	Tab(icon: Icon(Icons.access_time_sharp, size: 40,), text: "Currently",),
-	Tab(icon: Icon(Icons.calendar_today_sharp, size: 40,), text: "Today",),
-	Tab(icon: Icon(Icons.calendar_view_week_sharp, size: 40,), text: "Weekly",),
+	Tab(icon: Icon(Icons.access_time_sharp, size: 40,), text: "Actuellement",),
+	Tab(icon: Icon(Icons.calendar_today_sharp, size: 40,), text: "Aujourd'hui",),
+	Tab(icon: Icon(Icons.calendar_view_week_sharp, size: 40,), text: "Semaine",),
 	];
 
   @override
@@ -104,7 +104,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with WidgetsBindingObse
         // }
       }
     } catch (e) {
-      ref.read(errorProvider.notifier).state = "l'accés à la localisation n'est pas possible,";
+      ref.read(errorProvider.notifier).state = "l'accés à la localisation n'est pas possible, merci de rentrer une localité";
       setState(() {
         _otherCity = false;
         _locationData = null;
@@ -190,12 +190,6 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with WidgetsBindingObse
             //backgroundColor: theme.colorScheme.inversePrimary,
             title: Row(
               children: [
-                IconButton(
-                  onPressed: () {_handleLocation();},
-                  icon: Icon(Icons.location_on),
-				  iconSize: 42,
-				  color: Colors.white,
-                ),
                 Expanded(
                   child: CitySearchField(
                     onCitySelected: (locationData) async {
@@ -212,7 +206,13 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with WidgetsBindingObse
                         }
                       },
                     ),
-                  )
+                  ),
+                  IconButton(
+                  onPressed: () {_handleLocation();},
+                  icon: Icon(Icons.location_on),
+				          iconSize: 42,
+				          color: Colors.white,
+                ),
                 ],
               )
             ),
@@ -221,7 +221,6 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with WidgetsBindingObse
                   CenterBox(
                     theme: theme,
                     locationData: _locationData,
-                    title: "Currently",
                     weatherWidget : CurrentWidget(
                       weather: _weather,
                       theme: theme
@@ -230,7 +229,6 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with WidgetsBindingObse
                   CenterBox(
                     theme: theme,
                     locationData: _locationData,
-                    title: "Today",
                     weatherWidget: TodayWidget(
                       weather : _weather,
                       theme : theme),
@@ -238,7 +236,6 @@ class _MyHomePageState extends ConsumerState<MyHomePage> with WidgetsBindingObse
                   CenterBox(
                     theme: theme,
                     locationData: _locationData,
-                    title: "Weekly",
                     weatherWidget: WeeklyWidget(
                       weather: _weather,
                       theme: theme
@@ -264,13 +261,10 @@ class CenterBox extends ConsumerWidget {
     super.key,
     required this.theme,
     required Map<String, dynamic>? locationData,
-    required String title,
     required Widget weatherWidget,
-  }) : _title = title,
-  _locationData = locationData,
+  }) : _locationData = locationData,
   _weatherWidget = weatherWidget;
 
-  final String _title;
   final ThemeData theme;
   final Map<String, dynamic>? _locationData;
   final Widget _weatherWidget;
@@ -285,25 +279,23 @@ class CenterBox extends ConsumerWidget {
           padding: const EdgeInsets.all(20.0),
 			    shrinkWrap: true,
           children: [
-				    Text(_title,
-              style: theme.textTheme.titleLarge,
-              textAlign: TextAlign.center,
-				    ),
-            const SizedBox(height: 20),
-            Text(
-              _locationData != null
-                ? "${_locationData!['name']}\n${_locationData!['admin']}\n${_locationData!['country']}"
-                : "",
-              textAlign: TextAlign.center,
-				      style: theme.textTheme.bodyMedium,
-				    ),
-			Text(
-				error == null
-                ? ""
-                : "error : $error",
+            if (_locationData != null) ...[
+              Text("${_locationData!['name']}",
+                textAlign: TextAlign.center,
+				        style: theme.textTheme.titleMedium,
+				      ),
+              Text("${_locationData!['admin']}, ${_locationData!['country']}",
+                textAlign: TextAlign.center,
+				        style: theme.textTheme.bodyMedium,
+              ),
+            ],
+			      Text(
+				      error == null
+              ? ""
+              : "error : $error",
               textAlign: TextAlign.center,
 				      style: theme.textTheme.bodyMedium,
-			),
+			    ),
             _weatherWidget,
           ],
         ),
@@ -496,8 +488,8 @@ class _CitySearchFieldState extends ConsumerState<CitySearchField> {
             hintText: "Rentrer une localité...",
             // prefixIcon: const Icon(Icons.search),
 			// prefixIconColor: Colors.white,
-            suffixIcon: const Icon(Icons.search, size: 42,),
-			suffixIconColor: Colors.white,
+            prefixIcon: const Icon(Icons.search, size: 42,),
+			      prefixIconColor: Colors.white,
               ),
           ),
         );
