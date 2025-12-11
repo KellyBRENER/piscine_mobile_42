@@ -7,6 +7,11 @@ class HomePage extends StatelessWidget {
 
   Future<void> signInWithGoogle() async {
     try {
+      // Initialise GoogleSignIn avec le client ID Web (serverClientId)
+      await GoogleSignIn.instance.initialize(
+        serverClientId: '608315824552-glvca16edhpsitmhbne43q582qkb0hg2.apps.googleusercontent.com',
+      );
+      
       // Déclenche le flux d'authentification
       final GoogleSignInAccount googleUser = await GoogleSignIn.instance.authenticate();
 
@@ -15,7 +20,10 @@ class HomePage extends StatelessWidget {
       
       // Obtient l'accessToken via l'authorization client
       final authClient = googleUser.authorizationClient;
-      final clientAuth = await authClient.authorizationForScopes([]);
+      final clientAuth = await authClient.authorizationForScopes([
+        'email',
+        'profile',
+      ]);
       
       // Crée un credential Firebase à partir du jeton
       final AuthCredential credential = GoogleAuthProvider.credential(
