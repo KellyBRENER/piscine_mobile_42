@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  Future<void> signInWithGoogle() async {
+  Future<UserCredential?> signInWithGoogle({BuildContext? context}) async {
     try {
       // Initialise GoogleSignIn avec le client ID Web (serverClientId)
       await GoogleSignIn.instance.initialize(
@@ -32,28 +32,60 @@ class HomePage extends StatelessWidget {
       );
 
       // Connecte l'utilisateur à Firebase
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      return await FirebaseAuth.instance.signInWithCredential(credential);
       
       // Le StreamBuilder fera la redirection automatiquement
     } on FirebaseAuthException catch (e) {
       print('Erreur Google Sign-In : $e');
-      // Afficher un Snackbar à l'utilisateur ici
+      if (context != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur Google Sign-In : ${e.message ?? e.code}')),
+        );
+      }
+      return null;
     }
   }
 
-  Future<void> signInWithGitHub() async {
+  Future<void> signInWithGitHub(BuildContext context) async {
     try {
       // Crée le fournisseur d'authentification GitHub
       final GithubAuthProvider githubProvider = GithubAuthProvider();
-
-      // signInWithProvider gère l'ouverture de la fenêtre de navigateur/web view.
-      // Cela nécessite que le package 'firebase_auth' gère correctement les liens
-      // profonds et les redirections sur mobile.
-      await FirebaseAuth.instance.signInWithProvider(githubProvider);
       
+      print('Début de l\'authentification GitHub...');
+
+      try {
+        // Essayer de se connecter avec GitHub
+        final userCredential = await FirebaseAuth.instance.signInWithProvider(githubProvider);
+        print('Authentification GitHub réussie: ${userCredential.user?.email}');
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'account-exists-with-different-credential' && e.email != null) {
+          // Le compte existe déjà avec un autre provider (souvent Google).
+          print('Compte existant: demande de connexion Google pour lier les providers');
+
+          // Récupère le credential GitHub en attente pour le lier après connexion Google.
+          final pendingCredential = e.credential;
+
+          // Demande une authentification Google
+          final googleResult = await signInWithGoogle(context: context);
+
+          if (googleResult != null && pendingCredential != null) {
+            try {
+              await googleResult.user?.linkWithCredential(pendingCredential);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Compte GitHub lié à votre compte.')),
+              );
+            } on FirebaseAuthException catch (linkError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Échec de liaison: ${linkError.message ?? linkError.code}')),
+              );
+            }
+          }
+        } else {
+          rethrow;
+        }
+      }
     } on FirebaseAuthException catch (e) {
-      print('Erreur GitHub Sign-In : $e');
-      // Gérer l'erreur
+      print('Erreur Firebase GitHub Sign-In : Code=${e.code}, Message=${e.message}');
     } catch (e) {
        print('Erreur générale GitHub : $e');
     }
@@ -71,14 +103,14 @@ class HomePage extends StatelessWidget {
             const SizedBox(height: 20),
             // Bouton Google
             ElevatedButton.icon(
-              onPressed: signInWithGoogle,
+              onPressed: () => signInWithGoogle(context: context),
               icon: const Icon(Icons.login),
               label: const Text("Se connecter avec Google"),
             ),
             const SizedBox(height: 10),
             // Bouton GitHub
             ElevatedButton.icon(
-              onPressed: signInWithGitHub,
+              onPressed: () => signInWithGitHub(context),
               icon: const Icon(Icons.code),
               label: const Text("Se connecter avec GitHub"),
             ),
