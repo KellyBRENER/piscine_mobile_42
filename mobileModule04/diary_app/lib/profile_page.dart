@@ -1,42 +1,322 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class ProfilePage extends StatelessWidget {
+import 'theme.dart';
+import 'create_entry_sheet.dart';
+import 'entry_read_sheet.dart';
+import 'moods.dart';
+import 'main.dart';
+
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  String? _photoUrlWithCacheBuster;
+
+  @override
+  void initState() {
+    super.initState();
+    // Force le rafraîchissement des données utilisateur au montage
+    _refreshUserData();
+  }
+
+  Future<void> _refreshUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await user.reload();
+      // Récupère à nouveau l'utilisateur après reload
+      final freshUser = FirebaseAuth.instance.currentUser;
+      
+      // Vide le cache de l'image en ajoutant un paramètre timestamp
+      if (freshUser?.photoURL != null) {
+        final photoUrl = freshUser!.photoURL!;
+        // Ajoute un cache buster pour forcer le rechargement de l'image
+        _photoUrlWithCacheBuster = '$photoUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+        
+        // Évict l'ancienne image du cache
+        if (photoUrl.isNotEmpty) {
+          await Future.microtask(() {
+            final imageProvider = NetworkImage(photoUrl);
+            imageProvider.evict();
+          });
+        }
+      }
+      
+      // Déclenche un rebuild pour afficher les nouvelles données
+      if (mounted) {
+        setState(() {});
+      }
+    }
+  }
 
   Future<void> signOut() async {
     await FirebaseAuth.instance.signOut();
-    // Le StreamBuilder dans MyApp va détecter la déconnexion et rediriger vers HomePage
   }
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text("Mon Profil")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text("Bonjour, ${user?.displayName ?? user?.email ?? 'Utilisateur'}!"),
-            if (user?.photoURL != null) 
-              CircleAvatar(
-                backgroundImage: NetworkImage(user!.photoURL!),
-                radius: 50,
+    return BackgroundScaffold(
+      appBar: AppBar(
+        title: const Text('Mon Profil'),
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _refreshUserData,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                /// Avatar + infos
+                Center(
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 60,
+                        backgroundColor: ZenTheme.secondaryColor,
+                        backgroundImage: _photoUrlWithCacheBuster != null
+                            ? NetworkImage(_photoUrlWithCacheBuster!)
+                            : (user?.photoURL != null ? NetworkImage(user!.photoURL!) : null),
+                        child: user?.photoURL == null
+                            ? Icon(Icons.person_outline,
+                                size: 40, color: ZenTheme.primaryColor)
+                            : null,
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Bienvenue !',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        user?.displayName ?? user?.email ?? 'Utilisateur',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyLarge
+                            ?.copyWith(color: ZenTheme.primaryColor),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 40),
+
+                /// Infos compte
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Informations de compte',
+                            style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: 16),
+                        _infoTile(context, 'Email', user?.email ?? '—'),
+                        const SizedBox(height: 12),
+                        /*_infoTile(context, 'UID',
+                            user?.uid.substring(0, 12) ?? '—'),*/
+                      ],
+                    ),
+                  ),
+                ),
+                const DiariesEntries(),
+
+                const SizedBox(height: 32),
+
+                /// Déconnexion
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.logout),
+                  label: const Text('Déconnexion'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ZenTheme.errorColor,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () async {
+                    await signOut();
+                    if (context.mounted) {
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    }
+                  },
+                ),
+                ],
               ),
-            const SizedBox(height: 20),
-            Text("UID: ${user?.uid}"),
-            Text("Provider: ${user?.providerData.first.providerId}"),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: signOut,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text("Déconnexion"),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
+
+  Widget _infoTile(BuildContext context, String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: Theme.of(context)
+                .textTheme
+                .labelLarge
+                ?.copyWith(color: ZenTheme.textLightColor)),
+        const SizedBox(height: 4),
+        Text(value,
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: ZenTheme.primaryColor)),
+      ],
+    );
+  }
+}
+
+/// ----------------------
+/// ENTRIES
+/// ----------------------
+
+class DiariesEntries extends StatelessWidget {
+  const DiariesEntries({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const SizedBox.shrink();
+
+    final entriesRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('entries')
+        .orderBy('createdAt', descending: true);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Mes entrées',
+                style: Theme.of(context).textTheme.titleMedium),
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => const CreateEntryDialog(),
+                );
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        StreamBuilder<QuerySnapshot>(
+          stream: entriesRef.snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final docs = snapshot.data!.docs;
+
+            if (docs.isEmpty) {
+              return const Text(
+                'Aucune entrée pour le moment.\nClique sur + pour en créer une.',
+                textAlign: TextAlign.center,
+              );
+            }
+
+            return ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: docs.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final doc = docs[index];
+                final data = doc.data() as Map<String, dynamic>;
+
+                final moodKey = data['mood'] ?? 'neutre';
+                final mood = moods.firstWhere(
+                  (m) => m.key == moodKey,
+                  orElse: () => moods.firstWhere((m) => m.key == 'neutre'),
+                );
+
+                return Card(
+                  color: mood.color,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: ListTile(
+                    leading: Text(mood.emoji,
+                        style: const TextStyle(fontSize: 28)),
+                    title: Text(data['title'] ?? 'Sans titre',
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: data['createdAt'] != null
+                        ? Text(_formatDate(data['createdAt']))
+                        : null,
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () async {
+                        final confirm = await _confirmDelete(context);
+                        if (confirm == true) {
+                          await doc.reference.delete();
+                        }
+                      },
+                    ),
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => EntryReadDialog(
+                          entryId: doc.id,
+                          entryData: data,
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+/// ----------------------
+/// HELPERS
+/// ----------------------
+
+String _formatDate(Timestamp timestamp) {
+  final d = timestamp.toDate();
+  return '${d.day.toString().padLeft(2, '0')}/'
+      '${d.month.toString().padLeft(2, '0')}/${d.year}';
+}
+
+Future<bool?> _confirmDelete(BuildContext context) {
+  return showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Supprimer l’entrée'),
+      content: const Text('Cette action est définitive.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Annuler'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          child: const Text('Supprimer'),
+        ),
+      ],
+    ),
+  );
 }

@@ -24,8 +24,11 @@ signInWithGitHub:
     -> crée un utilisateur
 - si la connexion réussit, loggue de l'email du user
 
-
-
+demo
+user
+demouser4266@gmail.com
+demopassword66!
+16/12/2000
 
 
 //////////////////////////////////////
