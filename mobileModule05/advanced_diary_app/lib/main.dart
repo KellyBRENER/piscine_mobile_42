@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 // Importez vos pages
 import 'login_page.dart';
 import 'profile_page.dart';
+import 'calendar_page.dart';
+import 'home_tabs_page.dart';
 import 'theme.dart';
 
 // Widget réutilisable pour le fond avec transparence
@@ -85,8 +87,8 @@ class HomePage extends StatelessWidget {
           
           // 2. Utilisateur connecté (User? est non-null)
           if (snapshot.hasData && snapshot.data != null) {
-            // Redirige vers la page de profil
-            return const ProfilePage();
+            // Redirige vers la page avec onglets (Profil + Calendrier)
+            return const HomeTabsPage();
           } 
           
           // 3. Utilisateur déconnecté (User? est null)
