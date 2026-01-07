@@ -1,0 +1,35 @@
+signInWithGoogle : 
+- initialisation de l'instance GoogleSignIn avec l'id client web de l'app
+- ouvre le flux OAuth google (choix de compte etc...) et retourne un GoogleSignInAccount qui contient
+l'ID du compte, l'email, etc...
+- on récupère un token (GoogleSignInAuthentication) à envoyer à firebase pour prouver que google
+a bien authentifier le user.
+- puis demande d'accés à l'email et le profile avec authorizationForScopes
+- on génère un AuthCredential avec l'accessToken généré pour les scope et l'id token généré par GoogleSignInAuthentication
+c'est ce que firebase utilise pour se connecter
+- on connecte l'utilisateur à firebase en lui envoyant le credential:
+    -> firebase vérifie les tokens auprès de google
+    -> crée ou récupère le profile utilisateur côté firebase
+    -> marque la session comme connectée
+- le StreamBuilder initialisé à l'ouverture de l'app, changera de state et fera la redirection vers la
+page profile
+
+
+signInWithGitHub:
+- on crée un provider github fournit par firebase, il contient toute la logique OAuth (URL/scopes ...)
+- lance la connection à github, géré par firebase : 
+    -> ouvre le navigateur vers github
+    -> récupère le code OAuth à la final
+    -> échange ce code contre des tokens
+    -> crée un utilisateur
+- si la connexion réussit, loggue de l'email du user
+
+demo
+user
+demouser4266@gmail.com
+demopassword66!
+16/12/2000
+
+
+//////////////////////////////////////
+- afficher les exceptions dans l'app
