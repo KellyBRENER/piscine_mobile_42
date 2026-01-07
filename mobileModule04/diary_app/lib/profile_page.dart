@@ -102,8 +102,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         user?.displayName ?? user?.email ?? 'Utilisateur',
                         style: Theme.of(context)
                             .textTheme
-                            .bodyLarge
-                            ?.copyWith(color: ZenTheme.primaryColor),
+                            .displayLarge
                       ),
                       const SizedBox(height: 32),
                     ],
@@ -185,10 +184,24 @@ class _ProfilePageState extends State<ProfilePage> {
 class DiariesEntries extends StatelessWidget {
   const DiariesEntries({super.key});
 
+  Future<void> _ensureUserEmailStored(User user) async {
+    if (user.email != null) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set({
+            'email': user.email,
+          }, SetOptions(merge: true));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const SizedBox.shrink();
+
+    // Stocker l'email de l'utilisateur s'il n'est pas déjà présent
+    _ensureUserEmailStored(user);
 
     final entriesRef = FirebaseFirestore.instance
         .collection('users')

@@ -84,7 +84,9 @@ class LoginPage extends StatelessWidget {
         print('Authentification GitHub réussie: ${userCredential.user?.email}');
         // Retour à la racine pour rafraîchir via le StreamBuilder
         if (context.mounted) {
+          //Navigator.pushReplacementNamed(context, '/home');
           Navigator.of(context).popUntil((route) => route.isFirst);
+          print('Redirection vers la page principale après connexion GitHub.');
         }
       } on FirebaseAuthException catch (e) {
         if (e.code == 'account-exists-with-different-credential' && e.email != null) {
@@ -143,7 +145,7 @@ class LoginPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.85),
+                    color: Colors.white.withValues(alpha: 0.85),
                   ),
                   child: Text(
                     'Se connecter',
@@ -160,7 +162,7 @@ class LoginPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                   ),
                   child: Text(
                     'Choisissez votre méthode de connexion',

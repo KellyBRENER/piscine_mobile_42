@@ -17,7 +17,7 @@ class BackgroundScaffold extends StatelessWidget {
     super.key,
     required this.body,
     this.appBar,
-    this.opacity = 0.5,
+    this.opacity = 0.7,
   });
 
   @override
@@ -34,7 +34,7 @@ class BackgroundScaffold extends StatelessWidget {
                 image: const AssetImage('assets/images/nature.jpg'),
                 fit: BoxFit.cover,
                 colorFilter: ColorFilter.mode(
-                  Colors.white.withOpacity(opacity),
+                  Colors.white.withValues(alpha: opacity),
                   BlendMode.lighten,
                 ),
               ),
@@ -102,9 +102,9 @@ class HomePage extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.85),
+                          color: Colors.white.withValues(alpha: 0.85),
                           border: Border.all(
-                            color: ZenTheme.primaryColor.withOpacity(0.3),
+                            color: ZenTheme.primaryColor.withValues(alpha: 0.3),
                             width: 2,
                           ),
                         ),
@@ -133,7 +133,7 @@ class HomePage extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
                         child: Text(
                           'Connectez-vous pour accéder à votre journal',
