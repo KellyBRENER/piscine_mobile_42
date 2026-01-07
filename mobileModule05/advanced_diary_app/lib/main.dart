@@ -4,8 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 // Importez vos pages
 import 'login_page.dart';
-import 'profile_page.dart';
-import 'calendar_page.dart';
 import 'home_tabs_page.dart';
 import 'theme.dart';
 

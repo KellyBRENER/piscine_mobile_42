@@ -1,9 +1,27 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
-import 'theme.dart';
+import 'utils.dart';
 
-class CalendarPage extends StatelessWidget {
+import 'package:table_calendar/table_calendar.dart';
+
+class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
+
+  @override
+  State<CalendarPage> createState() => _CalendarPageState();
+}
+
+class _CalendarPageState extends State<CalendarPage> {
+  late DateTime _focusedDay;
+  DateTime? _selectedDay;
+  CalendarFormat _format = CalendarFormat.month;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusedDay = DateTime.now();
+    _selectedDay = _focusedDay;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,28 +32,45 @@ class CalendarPage extends StatelessWidget {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Vue calendrier',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  border: Border.all(
-                    color: ZenTheme.primaryColor.withValues(alpha: 0.2),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TableCalendar(
+                    firstDay: DateTime.utc(2010, 1, 1),
+                    lastDay: DateTime.utc(2035, 12, 31),
+                    focusedDay: _focusedDay,
+                    calendarFormat: _format,
+                    selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                    onDaySelected: (selectedDay, focusedDay) {
+                      setState(() {
+                        _selectedDay = selectedDay;
+                        _focusedDay = focusedDay;
+                      });
+                    },
+                    onPageChanged: (focusedDay) {
+                      _focusedDay = focusedDay;
+                    },
+                    onFormatChanged: (format) {
+                      setState(() => _format = format);
+                    },
+                    headerStyle: const HeaderStyle(
+                      formatButtonVisible: true,
+                      titleCentered: true,
+                    ),
                   ),
                 ),
-                child: const Text(
-                  'Contenu du calendrier à venir (planning, entrées par jour, etc.).',
-                  textAlign: TextAlign.center,
-                ),
               ),
+              const SizedBox(height: 16),
+              // Affiche les entrées du jour sélectionné
+              if (_selectedDay != null)
+                DiariesEntries(
+                  filterDate: _selectedDay,
+                  showAddButton: false,
+                  showMoodStats: false,
+                ),
             ],
           ),
         ),
